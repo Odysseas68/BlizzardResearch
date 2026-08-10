@@ -1,0 +1,23 @@
+> DISCLAIMER: These notes are for addon authors and as such are focused specifically on addon-facing API and security changes only. Changes planned for other parts of the game (UI or otherwise) are not included here.
+
+## Coming in 12.1.0 PTR 7
+- Added support for laying out aura groups in columns.
+- Aura containers can now be created by addons during combat.
+- Added support for adjusting aura button tooltip anchors.
+- Added support for hiding aura button tooltips while in combat.
+- Added a new aura instance ID-only sort method for aura containers, which sorts the auras by aura instance ID.
+- Added support for showing multiple dispel textures on an aura button.
+- Added new APIs to configure custom nineslice, backdrop, or background texture slice assets to use for all aura button tooltips. Note that these are global APIs that apply to all aura buttons (not to individual aura containers).
+- Aura buttons now permit native script object API calls - such as SetPoint, SetSize - during UI (re)load, until execution of `PLAYER_LOGIN`.
+- Added a new addon-safe API, `ResizeToBoundsRect`, which can be used to resize a frame to match the bounds of its children.
+- Resolved an issue that was causing addons to not be able to call aura button APIs outside of the `initializeFrame` callback.
+- Resolved an issue where a Lua error would occur when toggling visibility of an aura container while the mouse was over a visible aura button.
+- Resolved an issue involving the `CastingBarTypeInfo` table which was causing taint issues in nameplates.
+- Resolved an issue causing Lua errors when addons used `PingableUnitFrameTemplate`.
+- Child components of aura buttons can no longer be re-parented once configured.
+- Aura containers that are configured to show aura groups will no longer receive `OnSizeChanged` updates. Note that this restriction also applies to frames anchored to aura containers (but only after the aura container has an aura group added).
+- A number of Unit APIs have been changed to return secret values when the unit's identity is secret. This is being done to prevent various methods of combining these API calls to compare secret units to each other in combat.
+  - APIs affected: `UnitClass`, `UnitClassBase`, `UnitIsOwnerOrControllerOfUnit`, `UnitSex`, `UnitSexBase`, `UnitPhaseReason`, `UnitGroupRolesAssigned`, `UnitGroupRolesAssignedEnum`, `UnitIsRaidOfficer`, `UnitInRaid`, `UnitIsPVP`, `UnitRace`, `UnitIsGroupLeader`, `UnitIsGroupAssistant`, `UnitLeadsAnyGroup`, `UnitGetAvailableRoles`, `GetInspectSpecialization`.
+  - The following APIs now return secret values when auras are secret: `UnitIsCharmed`, `UnitIsPossessed`.
+  - The `GetGuildInfo` API no longer accepts compound unit tokens.
+  - The `UnitName` API will no longer return secrets while in an active PvP match.

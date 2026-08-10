@@ -1,0 +1,19 @@
+Midnight 12.1.0 PTR Changes 3
+-----------------------------
+
+> DISCLAIMER: These notes are for addon authors and as such are focused specifically on addon-facing API and security changes only. Changes planned for other parts of the game (UI or otherwise) are not included here.
+
+### Coming in 12.1.0 PTR 3
+- This week brings the majority of the UnitAura API restrictions (with a few small pieces still remaining). Broadly speaking you can consider APIs that return aura data are no longer safe for addon use while aura data is secret. More specifically:
+  - C_UnitAura and C_TooltipInfo APIs that provide access to aura data via index, slot, or instance ID will Lua error when called by addons while auras are secret.
+  - C_UnitAura APIs that provide access to aura data via spell ID or spell name can still be called by addons as before (non-secret spells still return non-secrets).
+  - The UNIT_AURA event now delivers a fully secret payload while auras are secret. AuraData structs are now always fully secret.
+- Added a new ManagedAuraContainer base type, which fully manages the display and layout of AuraButtons. 
+  - The Blizzard Target Frame now uses a ManagedAuraContainer for the display of its auras.
+- Fixed a bug where only 14 of the 19 parameters were being passed to ChatFrame message event filter functions.
+
+### Preview of PTR 4
+PTR 4 will add a whole swath of changes for AuraContainers and AuraButtons including:
+- CustomAuraContainers will be converted to ManagedAuraContainers. As a result, AuraContainers will now handle the creation of AuraButtons entirely on their own.
+- AuraContainer support for filtering by Spell ID, dispel type, stealable, and max duration. Some filters will have restrictions - more details to come.
+- AuraContainer support for sorting (both sort rule and direction).

@@ -1,0 +1,23 @@
+Midnight 12.1.0 PTR Changes 2
+-----------------------------
+
+> DISCLAIMER: These notes are for addon authors and as such are focused specifically on addon-facing API and security changes only. Changes planned for other parts of the game (UI or otherwise) are not included here.
+
+**Quick note:** the previously mentioned restrictions to UnitAura APIs are currently planned for PTR 3, so any addons using those APIs should expect significant changes next week.
+
+## Coming in 12.1.0 PTR 2
+- Aura Buttons now support the following functionality:
+  - Dispel borders: Using the SetAuraBorder(texture, [options]) API (see DefaultAuraBorderOptions for available options).
+  - Dispel type text: Using the SetAuraSymbol(fontString, [options]) API (see DefaultAuraSymbolOptions for available options).
+  - Aura tooltips: Automatically enabled but can be disabled via the SetMouseMotionEnabled API.
+- Added the following new Forbidden Aspects: 
+  - UntrustedScriptExecution: When active, addon-installed script handlers on a frame and its children will never be run.
+  - UntrustedLayoutScriptExecution: When active, addon-installed OnSizeChanged handlers will never be run for a frame, its children, or any frames anchored to either.
+  - EventRegistrations: When active, addons cannot register a frame for events.
+  - AlwaysPropagateInput: When active, a frame and its children will always propagate mouse and keyboard input.
+  - ScriptedInput: When active, addons are not allowed to call input-related APIs (Click, SetFocus, etc.) on a frame or its children.
+  - QueryFocus: When active, addons cannot query if a frame or its children are the current mouse or keyboard focus.
+- Aura Buttons have had the following Forbidden Aspects applied to them: UntrustedScriptExecution, UntrustedLayoutScriptExecution, AlwaysPropagateInput, ScriptedInput, and QueryFocus
+- Aura Containers have had the EventRegistrations Forbidden Aspect applied to them.
+- Editboxes will no longer auto-focus if they become visible while they have the Shown secret aspect applied.
+- API calls such as SetParent and SetPoint will error if an object would implicitly gain any Forbidden Aspects that it does not already have.

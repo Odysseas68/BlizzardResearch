@@ -1,0 +1,36 @@
+I'll try to keep this updated from my own findings and comments, in no particular order.
+
+- tooltip options:
+  - tooltip anchor (`AuraButtonTooltip:SetOwner` 2nd arg), pref per-group/slot, but per-container is fine
+  - only show while in combat
+  - can't skin the tooltip nor append information <:sadge:804129705095331850> 
+- color curve options for relevant widgets
+  - especially sought after for AuraBorder
+- alpha/scale/saturation curve options for relevant widgets
+- inverted candidateFilter options (i.e. _not_ stealable)
+- pandemic indication (pref animations)
+- `auraButton:SetApplicationBar(statusBar[, options])`
+  - like count but a bar
+- `auraContainer:SetAuraGroupFilterString(groupKey, filter)`
+  - there's a slot equivalent, this is most likely an oversight
+- containers can't be created in combat (issue for nameplates and group headers)
+  - we can pre-allocate them but it would be nice if there was a grace period during spawn of these where we could JIT-create them
+- methods to enable/disable groups and slots (for processing - force update on enable and wipe data on disable)
+  - we can work around this for groups by setting `.maxFrameCount` to `0`, and setting invalid filter for slots (i.e. `HELPFUL|HARMFUL`)
+- `auraButton:SetCasterName(fontString[, options])`
+  - similar to `:SetSpellName` but it'd write `.sourceUnit`'s name to the fontstring
+  - options should contain `colorByClass` and `hideRealmName`
+- aura group reordering
+  - currently they're ordered by when they're created, workaround is to "disable" them and create new ones
+- `:SetUnit` per group/slot
+  - so we can combine them, i.e. player buffs + target debuffs in same container
+- `auraButton:SetAuraBorder` support for multiple borders per button
+  - i.e. for NineSlice borders
+- OnRemoved APIs for sound
+  - we currently only have OnAdded APIs
+
+- `isHostile` and `isFriendly` candidate filters (based on container unit)
+- `AddItemEnchantmentGroup` for all 3 slots, with layouting
+- `:SetAuraBorder` should support an Icon-only style, using the same atlases as PrivateAurasUI uses (`dispelAtlases` table)
+- groups' layouts are currently horizontal-first, we'd also like to see a vertical-first and/or grid layouts
+- item enchantment icon options to show enchantment icon (and tooltip?) instead of the item it is applied to

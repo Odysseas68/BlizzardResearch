@@ -1,0 +1,81 @@
+> DISCLAIMER: These notes are for addon authors and as such are focused specifically on addon-facing API and security changes only. Changes planned for other parts of the game (UI or otherwise) are not included here.
+
+## Coming in 12.1.0 PTR 6
+- Added a new `GetAuraGroupFrame` API to aura containers, which can be used to retrieve a child aura group frame by index.
+- Added new ApplicationBar APIs to custom aura buttons that allow addons to show a status bar that tracks their number of applications.
+- Added a new `SetAuraGroupFilterString` API to aura containers, which allows addons to set the filter string after creation.
+- Added support for color curves and color maps to the `AuraButton:SetAuraBorder` API (see CustomAuraButtonBorderOptions in the documentation files for details).
+- Addons can now specify custom ordering for the aura groups within an aura container, using the new `layoutIndex` option in the layout options table.
+- Added a new CVar `tooltipShowAuraSpellIDs` which causes spell IDs to show in aura tooltips. This cvar will not persist between sessions.
+- The `AddAuraAppliedSound` API has been renamed `AddAuraSound` and now supports specifying whether the sound should play when an aura is first added, gains an application or removed.
+  - The RemoveAuraAppliedSound API has been renamed RemoveAuraSound to match.
+- Auras flagged as non-secret can now be filtered using `excludeSpellIDs` and `includeSpellIDs` without restrictions on any unit.
+- Added new APIs `HasAccessConstraints` and `CanBeAccessedInContext` to script objects.
+- Fixed a bug that was causing the cooldown swipe to show incorrectly in some cases.
+- Fixed a bug where calling some APIs (like `FormatNumber`) with secrets would cause objects to be marked as secret incorrectly (and result in Lua Errors).
+- Addons are no longer allowed to reparent aura buttons.
+- Temporary Weapon Enchants now support click-to-cancel.
+- Boolean candidate filters now support negation by setting the boolean as false (e.g. `isStealable = false`). Leaving the option as nil will continue to mean "ignore".
+- Added new `GetActiveBlockedRolesets` and `GetActiveAllowedRolesets` APIs to C_Roleset, which return the list of currently blocked and allowed rolesets.
+- Added a new `IsRolesetFiltered` API on frames, which returns whether the frame is currently filtered by roleset.
+- Added a new `"alwaysBlocked"` roleset, which can be applied to frames to cause them to never show.
+## Preview of PTR 7
+- A number of Unit APIs are being changed to return secret values when the unit's identity is secret. This is being done to prevent various methods of combining these API calls to compare secret units to each other in combat.
+  - APIs affected: `UnitClass`, `UnitClassBase`, `UnitIsOwnerOrControllerOfUnit`, `UnitSex`, `UnitSexBase`, `UnitPhaseReason`, `UnitGroupRolesAssigned`, `UnitGroupRolesAssignedEnum`, `UnitIsRaidOfficer`, `UnitInRaid`, `UnitIsPVP`, `UnitRace`, `UnitIsGroupLeader`, `UnitIsGroupAssistant`, `UnitLeadsAnyGroup`, `UnitGetAvailableRoles`, `GetInspectSpecialization`.
+- The `GetGuildInfo` API is being changed to no longer accept compound unit tokens.
+- The following APIs are being changed to return secret values when auras are secret: `UnitIsCharmed`, `UnitIsPossessed`.
+## Aura Classifications
+Now that custom aura containers can be used to filter and position helpful auras on raid members, we have removed the following healer buffs and HoTs from the "never secret" list:
+
+### Preservation Evoker
+- [355941](<https://wowhead.com/spell=355941>) - Dream Breath
+- [363502](<https://wowhead.com/spell=363502>) - Dream Flight
+- [364343](<https://wowhead.com/spell=364343>) - Echo
+- [366155](<https://wowhead.com/spell=366155>) - Reversion
+- [367364](<https://wowhead.com/spell=367364>) - Echo Reversion
+- [373267](<https://wowhead.com/spell=373267>) - Lifebind
+- [376788](<https://wowhead.com/spell=376788>) - Echo Dream Breath
+- [409895](<https://wowhead.com/spell=409895>) - Verdant Embrace
+### Augmentation Evoker
+- [360827](<https://wowhead.com/spell=360827>) - Blistering Scales
+- [395152](<https://wowhead.com/spell=395152>), [395296](<https://wowhead.com/spell=395296>) - Ebon Might
+- [410089](<https://wowhead.com/spell=410089>) - Prescience
+- [410263](<https://wowhead.com/spell=410263>) - Inferno's Blessing
+- [410686](<https://wowhead.com/spell=410686>) - Symbiotic Bloom
+- [413984](<https://wowhead.com/spell=413984>) - Shifting Sands
+### Resto Druid
+- [774](<https://wowhead.com/spell=774>) - Rejuv
+- [8936](<https://wowhead.com/spell=8936>) - Regrowth
+- [33763](<https://wowhead.com/spell=33763>) - Lifebloom
+- [48438](<https://wowhead.com/spell=48438>) - Wild Growth
+- [155777](<https://wowhead.com/spell=155777>) - Germination
+- [439530](<https://wowhead.com/spell=439530>) - Symbiotic Blooms
+### Disc Priest
+- [17](<https://wowhead.com/spell=17>) - Power Word: Shield
+- [194384](<https://wowhead.com/spell=194384>) - Atonement
+- [1253593](<https://wowhead.com/spell=1253593>) - Void Shield
+- [1300008](<https://wowhead.com/spell=1300008>) - Power Word: Shield (Unfolding Vision)
+- [1300009](<https://wowhead.com/spell=1300009>) - Void Shield (Unfolding Vision)
+### Holy Priest
+- [139](<https://wowhead.com/spell=139>) - Renew
+- [41635](<https://wowhead.com/spell=41635>) - Prayer of Mending
+- [77489](<https://wowhead.com/spell=77489>) - Echo of Light
+### Mistweaver Monk
+- [115175](<https://wowhead.com/spell=115175>) - Soothing Mist
+- [119611](<https://wowhead.com/spell=119611>) - Renewing Mist
+- [124682](<https://wowhead.com/spell=124682>) - Enveloping Mist
+- [450769](<https://wowhead.com/spell=450769>) - Aspect of Harmony
+- [1292922](<https://wowhead.com/spell=1292922>) - Coalescence
+### Restoration Shaman
+- [974](<https://wowhead.com/spell=974>), [383648](<https://wowhead.com/spell=383648>) - Earth Shield
+- [61295](<https://wowhead.com/spell=61295>) - Riptide
+- [382024](<https://wowhead.com/spell=382024>) - Earthliving Weapon
+- [207400](<https://wowhead.com/spell=207400>) - Ancestral Vigor
+- [444490](<https://wowhead.com/spell=444490>) - Hydrobubble
+### Holy Paladin
+- [53563](<https://wowhead.com/spell=53563>) - Beacon of Light
+- [156322](<https://wowhead.com/spell=156322>) - Eternal Flame
+- [156910](<https://wowhead.com/spell=156910>) - Beacon of Faith
+- [1244893](<https://wowhead.com/spell=1244893>) - Beacon of the Savior
+- [200025](<https://wowhead.com/spell=200025>) - Beacon of the Virtue
+- [431381](<https://wowhead.com/spell=431381>) - Dawnlight

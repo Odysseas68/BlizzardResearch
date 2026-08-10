@@ -1,0 +1,47 @@
+Midnight 12.1.0 PTR Changes 4
+-----------------------------
+
+> DISCLAIMER: These notes are for addon authors and as such are focused specifically on addon-facing API and security changes only. Changes planned for other parts of the game (UI or otherwise) are not included here.
+
+## Coming in 12.1.0 PTR 4
+This week brings some major changes to AuraContainers and AuraButtons.
+
+- AuraContainers now handle the creation and anchoring of all AuraButtons inside of them entirely on their own.
+  - Addons no longer create AuraButtons directly. The `AddAuraFrame` API has been removed.
+- Added a new construct to AuraContainers: *AuraGroups*. Broadly speaking, you can think of an AuraGroup as a dynamic, self-managing collection of auras within an AuraContainer.
+  - AuraContainers can have multiple AuraGroups, each with their own filters and settings.
+  - Auras from each group are anchored sequentially in the order the groups were added.
+- Addons add AuraGroups to AuraContainers using a new API `AddAuraGroup(groupKey, filterString, options)`.
+  - The `groupKey` param is an arbitrary addon-defined string used to access the group after creation.
+  - The `filterString` param is a standard aura filter string as used today (e.g. `"HELPFUL|RAID"`).
+    - The `options` param is a table that can contain a number of optional settings.
+      - `maxFrameCount`: The maximum number of aura frames to show in this group
+      - `sortMethod` and `sortDirection`: Used to control how auras in this group are sorted (see new enum `AuraContainerSortMethod` for choices).
+      - `initializeFrame`: A callback function that is called for each AuraButton created.
+      - `templateNames`: A list of xml templates to apply to each AuraButton (in addition to `CustomAuraButtonTemplate`).
+      - `candidateFilters`: A table of additional filter information to apply when determining if an aura should be displayed. See `ValidateCandidateFilters` for the full list of options, but some examples are:
+        - Include/exclude maps for spell IDs and dispel types.
+        - `maxDuration`
+        - Various boolean values from AuraData (`isFromPlayerOrPlayerPet`, `isRoleAura`, `isPriorityAura`, `isStealable`, etc.).
+
+- AuraGroups create and anchor AuraButtons in batches of 10 as needed.
+- Anchoring of AuraButtons created by an AuraContainer can be adjusted via the `SetAuraGroupLayout` API (see `ValidateAuraGroupLayoutOptions` for available options).
+- AuraContainers now automatically resize to fit group-based AuraButtons inside of them.
+- AuraContainers now treat private auras just like regular auras, allowing them to be shown and sorted normally.
+- Added a new construct to AuraContainers: *AuraSlots*. You can think of AuraSlots as AuraGroups with `maxFrameCount` set to 1 (they will only ever show a single aura).
+  - Unlike AuraGroups, addons can manually anchor AuraSlots.
+  - The `AddAuraSlot(slotKey, filterString, options)` API is used to add AuraSlots, and it supports most of the same options AddAuraGroup does.
+- Added a new API, `AddItemEnchantment(itemEnchantmentSlot, options)`, to AuraContainers, which allows them to show temporary weapon enchants. See `ValidateAddItemEnchantmentOptions` for the list of options supported.
+- Added a new API `SetCancelAuraButtons` to AuraButtons that can be used to specify which mouse clicks to use to cancel. This can be called on AuraButtons via the `initializeFrame` callback.
+
+## Other changes
+- The `AddPrivateAuraAppliedSound` and `RemovePrivateAuraAppliedSound` APIs have been renamed to `AddAuraAppliedSound` and `RemoveAuraAppliedSound`, and now work on any auras (not just private auras).
+- Added support for negating most aura filters using the `!` character. So for instance `!PLAYER` includes only auras NOT cast by the player.
+- The `UNIT_AURA` event now delivers a fully secret payload while auras are secret. AuraData structs are now always fully secret.
+- `SecureAuraHeaderTemplate` has been removed from Mainline (it will still exist for Classic). Addons still using SecureAuraHeaderTemplate should migrate over to using AuraContainers.
+- Fixed a crash that happened when attempting to create an AuraContainer in combat.
+  - Attempting to do so will still generate a Lua error, however (as intended).
+  - Added a new SecureGroupHeaderTemplate xml template that can be used to safely create a single AuraContainer on UnitFrame creation.
+- Resolved an issue where the `SetApplicationCount` function on CustomAuraButtons would error if not supplied an options table.
+- Resolved an issue where `ApplyAuraSymbol` on CustomAuraButtons was consulting the wrong region (AuraButton) for dispel type validation.
+

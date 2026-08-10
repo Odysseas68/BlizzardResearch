@@ -1,0 +1,11 @@
+> DISCLAIMER: These notes are for addon authors and as such are focused specifically on addon-facing API and security changes only. Changes planned for other parts of the game (UI or otherwise) are not included here.
+
+## Coming in 12.1.0 PTR 5
+- Added a new aura filter, `DISPELLABLE`, which returns auras that have a dispel type of any kind, regardless of whether anyone in the player's raid can dispel it.
+- Added back the `IMPORTANT` aura filter now that it is no longer abusable.
+- The `RAID_PLAYER_DISPELLABLE` aura filter now also returns helpful auras on enemies that are dispellable/stealable by a raid member.
+- AuraButtons are now forbidden (meaning APIs called on them via tainted code will Lua error) **whenever auras are secret**.
+  - This forbidden state is not applied until after the `initializeFrame` callback has been called, and AuraButtons return to a non-forbidden state when auras become non-secret again (outside combat, encounters, etc.).
+  - This change was necessary in order to prevent various exploits.
+- It is no longer possible for addons to create new WorldFrame instances via `CreateFrame` (preventing a crash).
+- Made improvements to the error messaging displayed when attempting to call forbidden script APIs on script objects.
