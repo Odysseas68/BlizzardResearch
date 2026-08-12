@@ -17,6 +17,8 @@
 - **QUESTION:** What exact spell-ID identity-filter combinations are accepted for player helpful/harmful auras in restricted contexts?
 - **QUESTION:** Is there a supported timeless-only selector?
 - **QUESTION:** Can group/slot sources be enabled or disabled without rebuilding configuration?
+- **UNVERIFIED EXTERNAL RESEARCH LEAD:** Independently investigate the current Live managed AuraContainer contract and OBB applicability corresponding to reported self-cast and maximum-duration filtering. An external aura-addon developer, Elkano (ElkBuffBars), stated that the 12.1 rewrite expects to retain those filters while most legacy filters are no longer available. This is not Blizzard documentation, does not establish API names or implementation details, and must be verified independently against current Blizzard Live source before OBB uses it.
+- **LOW-PRIORITY UNVERIFIED EXTERNAL OBSERVATION:** The same statement reports that buffs, debuffs, and temporary enchantments are no longer mixed. Treat this only as a lead about another addon's design; the separate managed paths documented in this repository rest on independent Blizzard-source research, not this statement.
 
 ## Layout
 
@@ -46,4 +48,3 @@
 - **QUESTION:** Should OUS preserve consumable auto-classification, replace it with curated spell-ID presets, or omit it initially?
 - **QUESTION:** Should BuffBars remain separate movable groups, or adopt one coordinated layout surface?
 - **QUESTION:** Which frozen features are required for the first 12.1 release versus later parity?
-

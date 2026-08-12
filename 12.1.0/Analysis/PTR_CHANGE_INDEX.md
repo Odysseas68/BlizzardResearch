@@ -82,6 +82,8 @@ Managed AuraButton tooltips remain preferred. Ordinary auras use the native mana
 
 ### DEBUFFS Readiness
 
+Detailed player-HARMFUL architecture, filtering, private-aura, presentation, sorting, legacy-compatibility, and prototype findings are maintained in [Managed Player HARMFUL Auras](AuraHarmful.md).
+
 **SOURCE FACT:** A custom player DEBUFFS group uses the same long-lived managed container with unit `player`, a group filter string containing `HARMFUL`, and the ordinary group options/sort/layout surface. Public and private aura sources both feed the managed group pipeline.
 
 **CONSTRAINT:** For harmful auras on an assistable unit such as `player`, `CanApplyIdentityCandidateFilters` skips both `includeSpellIDs` and `excludeSpellIDs` unless the spell's aura secrecy is `NeverSecret`. When identity maps are skipped, the aura is not rejected; non-identity candidate filters still run. Private harmful auras use the separate private source but the same filter and identity-eligibility logic. Tooltips remain native; cancellation behavior is the same AuraButton path, although harmful player auras generally are not cancelable. Sorting is unchanged.
