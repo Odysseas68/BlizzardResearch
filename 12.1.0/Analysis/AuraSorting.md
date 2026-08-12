@@ -1,5 +1,11 @@
 # Aura Sorting
 
+## Live 12.1 Confirmation
+
+**FACT:** Retail Live commit `eb941aad0` and final PTR commit `6e348870e` are identical for the AuraContainer sort enums, comparator dispatch, `AuraUtil` comparators, group sorting, and generated UnitAura sort documentation.
+
+**LIVE CONCLUSION:** The three OBB mappings remain valid unchanged: Default -> `Default`/`Normal`, Name -> `NameOnly`/`Normal`, and Time Left -> `ExpirationOnly`/`Reverse`. Timeless ordering, operand reversal, and aura-instance-ID tie behavior did not change.
+
 ## Current Sort Surface
 
 **FACT:** Current sort rules are `Default`, `BigDefensive`, `UnitFrameDebuff`, `ImportantOnly`, `Expiration`, `ExpirationOnly`, `Name`, `NameOnly`, and `AuraInstanceIDOnly`. Directions are `Normal` and `Reverse`.

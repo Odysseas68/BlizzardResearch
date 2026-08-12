@@ -6,6 +6,12 @@
 
 **ANALYSIS:** The trend is not merely API deprecation. It is a transfer of secret-sensitive dataflow and object ownership from addon Lua to Blizzard-controlled execution.
 
+## Live 12.1 Confirmation
+
+**FACT:** Retail Live commit `eb941aad0` (`12.1.0.69273`, interface `120100`) and final PTR commit `6e348870e` have identical aura-relevant source trees.
+
+**LIVE CONCLUSION:** Container ownership, managed parsing, group/slot/enchantment selection, AuraButton creation and presentation, and secure/native data propagation reached Live without an architectural break. The earlier recommendation to wait for Live was a PTR-stage gate; the source gate is now satisfied for the already-validated managed BUFFS slice. Runtime validation remains required for new feature slices and for any untested restricted context.
+
 ## Source Documents
 
 - [PTR Changes 1](../Source/Midnight%2012.1.0%20PTR%20Changes%201.txt)
@@ -112,6 +118,8 @@
 
 **RECOMMENDATION:** Keep production BuffBars postponed until 12.1 Live. Use a separate PTR prototype to prove feature parity before any OUS code is designed.
 
+**LIVE STATUS:** This historical PTR recommendation has been satisfied for the managed player-BUFFS prototype: final Live matches final PTR source, and the listed BUFFS behaviors were already validated on PTR. It does not automatically clear DEBUFFS, BuffFrame automation, or enchantment parity, which retain the specific constraints documented in the Live audit.
+
 ## Open Questions
 
 - Can one container/group model satisfy independent movable OUS groups without awkward parent restrictions?
@@ -126,4 +134,3 @@
 - [Filters](AuraFilters.md)
 - [Sorting](AuraSorting.md)
 - [Migration Guide](../OUS/BuffBarsMigrationGuide.md)
-

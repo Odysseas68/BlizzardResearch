@@ -1,5 +1,11 @@
 # Combat and Security Restrictions
 
+## Live 12.1 Confirmation
+
+**FACT:** Retail Live commit `eb941aad0` and final PTR commit `6e348870e` are identical across AuraContainer/AuraButton templates, generated ForbiddenAspect and SecretAspect documentation, generated UnitAura restrictions, FlowLayout dependencies, Edit Mode, and the restricted addon environment.
+
+**LIVE CONCLUSION:** Indexed, slot, instance-ID, and enumeration access remains restricted as documented; spell-name/ID lookups retain non-secret requirements where generated metadata states them; AuraButtons retain conditional `DenyTaintedAccessWhenAurasAreSecret`; and the container/button/descendant forbidden-aspect model is unchanged. Source parity does not extend the prior runtime result into untested combat mutations or secret contexts.
+
 ## Execution Boundary
 
 **FACT:** `Blizzard_AuraContainer` Lua executes with `UseSecureEnvironment: 1`. Addon configuration enters through native object APIs and narrow inbound functions.
@@ -53,4 +59,3 @@
 **FACT:** `SecureAuraHeaderTemplate` is not loaded for Mainline; its files are Classic-gated. `SecureGroupHeaderTemplate` remains available for secure unit-frame scenarios.
 
 **ANALYSIS:** New Retail aura work should not revive a SecureAuraHeader-based design.
-

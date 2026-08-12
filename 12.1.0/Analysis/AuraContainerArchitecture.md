@@ -8,6 +8,16 @@
 
 **OBSERVATION:** The architecture described here is PTR evidence, not a Live API guarantee.
 
+### Live 12.1 Confirmation
+
+**FACT:** The final Retail Live mirror is commit `eb941aad0`, with `version.txt` reporting `12.1.0.69273` and Mainline interface `120100`. The final PTR mirror is commit `6e348870e`, also build `12.1.0.69273`.
+
+**FACT:** Direct tree comparisons found no differences between these Live and PTR revisions in `Blizzard_AuraContainer`, `Blizzard_BuffFrame`, generated API documentation, `AuraUtil.lua`, `AnchorUtil.lua`, `MixinUtil.lua`, TargetFrame's shared aura implementation, Edit Mode, or the restricted addon environment.
+
+**LIVE CONCLUSION:** The ownership model, dirty lifecycle, managed frame retention/release, FlowLayout self-sizing, hidden pooled-frame exclusion, and lack of a public post-layout callback or active-frame enumerator are unchanged. The Phase B.2 topology remains valid: ordinary position root -> self-sizing `CustomAuraContainer` -> container-owned `AuraButton` descendants.
+
+**HISTORICAL NOTE:** Between the older architecture checkpoint `d3915c78a` (build 68914) and the later PTR checkpoint `a520b6c27` (build 69189), disabled managed containers were tightened to clear parsed auras and active item enchantments, AuraButton tooltip refresh ownership moved to the shared forbidden tooltip, frame creation was routed through the global environment for addon template/mixin resolution, and optional pandemic-region and dispel-presentation controls were added. No aura-relevant changes occurred from `a520b6c27` to final PTR `6e348870e`, and none of these late-PTR refinements invalidates the validated enabled BUFFS architecture.
+
 ## Overall Architecture
 
 **FACT:** `Blizzard_AuraContainer.toc` enables `UseSecureEnvironment: 1`. Most implementation Lua executes in the secure addon environment. XML templates and the inbound bridge provide the creation and public-entry boundary.

@@ -6,6 +6,12 @@
 
 **OBB LEGACY FACT:** Compatibility behavior was traced in the Retail PTR working copy of OdysseusBuffBars through defaults, SavedVariables initialization, `OBB:RefreshAll()`, `Engine:Scan()`, group routing, filter evaluation, and the filter editor. The addon copy was read-only.
 
+### Live 12.1 Confirmation
+
+**BLIZZARD SOURCE FACT:** Retail Live commit `eb941aad0` (`12.1.0.69273`, interface `120100`) is identical to final PTR commit `6e348870e` for `Blizzard_AuraContainer`, `AuraUtil.lua`, generated UnitAura documentation, and the direct filtering dependencies. No aura-relevant change occurred after the document's `a520b6c27` PTR checkpoint.
+
+**LIVE CONCLUSION:** Player HELPFUL candidate identity filtering and the OBB compilation rule remain valid unchanged. Player HARMFUL identity maps remain conditional: on an assistable unit such as `player`, both `includeSpellIDs` and `excludeSpellIDs` are skipped unless `C_Secrets.GetSpellAuraSecrecy(spellID)` is `NeverSecret`; skipping the maps does not reject the aura. Private auras enter the same managed group/slot pipeline through the separate private source and are subject to the same identity-eligibility rule.
+
 ## Filter Layers
 
 **BLIZZARD SOURCE FACT:** The current framework has three selection layers:
@@ -275,6 +281,8 @@ Apply the result with `SetAuraGroupCandidateFilters(groupKey, candidateFilters)`
 7. **PRODUCT DECISION:** Should legacy enhancement routing use curated spell IDs, manual groups, or reduced initial parity?
 8. **PRODUCT DECISION:** Which legacy discovered rows, if any, should be persisted before direct scanning is retired?
 9. **SOURCE WATCH:** Re-audit identity eligibility, candidate fields, and runtime setters against the final 12.1 Live source.
+
+**LIVE RESOLUTION:** Final Live preserves the documented identity eligibility, candidate fields, setter refresh behavior, and include/exclude precedence. Runtime safety of tainted combat-time setter calls remains unproven and must not be inferred from source parity.
 
 ## References
 
