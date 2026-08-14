@@ -28,9 +28,14 @@
 
 ## Enchantments
 
-- **QUESTION:** Can item enchantments participate in ordinary groups/candidate filters?
-- **QUESTION:** Are enchantment name, icon, duration, charges, tooltip, and cancellation all sufficient for BuffBars parity?
-- **QUESTION:** What is the purpose of the ranged slot on current Retail equipment paths?
+- **RESOLVED SOURCE FACT:** Item enchantments use a parallel managed provider/frame path and do not participate in AuraGroups, AuraSlots, parsing, or candidate filters. See [Managed Item Enchantments](AuraEnchantments.md).
+- **RESOLVED SOURCE FACT:** Native icon, equipped-item name, charges, duration, inventory tooltip, cancellation target, sorting, and self-sizing are supported. An enchantment-specific display name and aura-style filtering are not.
+- **RESOLVED RUNTIME FACT:** Thalassian Phoenix Oil cold-logins exposed the record as present-incomplete on inventory callback 1 but only timed-ready at callback ordinals 69, 105, or 430. `UNIT_INVENTORY_CHANGED` is useful startup activity evidence, not a readiness contract or stable ordinal; fixed callback counts are rejected. See [Managed Item Enchantments](AuraEnchantments.md).
+- **VALIDATED LIVE LIFECYCLE:** The generation-based `C_Timer.After(0)` quiet-turn coalescer passed two genuine cold character logins with Phoenix Oil active on MainHand. The managed row and timer appeared automatically without manual refresh, stale zero-duration state, or duplication. Reload, native cancellation in the tested context, fresh reapplication, and the native inventory tooltip also passed. The validated prototype performs no PaperDoll inspection, polling, fixed delay, fixed callback counting, synthetic fallback, or per-event managed refresh.
+- **COMPARATIVE RESEARCH LEAD:** The original ElkBuffBars r223 alpha is available locally at `D:\WoWDEV\Reference\ThirdParty\ElkBuffBars-r223-alpha\`. Initial in-game observation found a very early alpha with BUFFS display available, no settings UI observed, and no temporary enchantments exposed in the tested alpha. It therefore provided no runtime comparison for this startup issue. Its source was not audited here; infer no implementation details without a future audit.
+- **RUNTIME QUESTION:** Validate OffHand, simultaneous MainHand/OffHand, Ranged where usable, permanent/zero-duration results, broader temporary-enchantment coverage, and cancellation in combat. The tested MainHand native inventory tooltip works, but exact tooltip contents do not provide a supported enchant-name resolver.
+- **RUNTIME QUESTION:** Which current Retail runtime, if any, can practically exercise the declared ranged slot `18` provider?
+- **NEXT RESEARCH TOPIC:** Decide how managed OBB should route Food, Flask, and similar HELPFUL enhancement auras. Legacy OBB places them in ENCHANTMENTS; the managed prototype naturally exposes them through BUFFS. This is separate from native MainHand/OffHand item-enchantment lifecycle and requires an explicit routing/presentation policy.
 
 ## Presentation
 
