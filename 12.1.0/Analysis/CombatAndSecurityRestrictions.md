@@ -68,6 +68,12 @@
 
 **FACT:** Adding an AuraGroup applies `UntrustedLayoutScriptExecution` to the container. The source comment directs addon frames anchored to it to opt in using `DisableUntrustedLayoutScriptsTemplate` at creation.
 
+**RUNTIME EVIDENCE:** An ordinary addon-owned row whose placement depended on the restricted, self-sizing managed-container layout could not be used as `GameTooltip` owner. `GameTooltip:SetOwner(dependentRow, ...)` failed with `Anchoring disallowed as dependent object would inherit forbidden aspects: UntrustedLayoutScriptExecution`.
+
+**ANALYSIS:** The failure is about anchor/dependency propagation, not ordinary addon-frame ownership in isolation. Generated documentation states that `UntrustedLayoutScriptExecution` propagates to anything anchored to the restricted object, and the custom-container source explicitly warns that dependent addon frames must opt in at creation (`ForbiddenAspectConstantsDocumentation.lua:13-23`; `Blizzard_CustomAuraContainer.lua:314-321`).
+
+**RUNTIME WORKAROUND:** `GameTooltip:SetOwner(UIParent, "ANCHOR_CURSOR")` followed by `GameTooltip:SetInventoryItem("player", fishingToolSlot)` displayed the fishing-tool tooltip without another observed forbidden-layout error. Treat this as a tested independent-owner workaround for the observed topology, not a universal requirement. See [Tooltip Integration](TooltipIntegration.md).
+
 **TEST REQUIREMENT:** Prototype movable-parent, anchored-child, scale, group resize, and combat refresh behavior before selecting the OUS frame hierarchy.
 
 ## SecureAuraHeaderTemplate

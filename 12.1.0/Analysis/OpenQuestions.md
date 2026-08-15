@@ -41,6 +41,16 @@
 - **RESOLVED RESEARCH FINDING:** Food, Flask/Phial, and Augment-related effects in this experiment were ordinary HELPFUL aura spell identities, separate from native MainHand/OffHand temporary-item-enchantment providers. The generated spell namespace supplied useful readable names/descriptions but no formal category API. Routing and presentation remain addon policy.
 - **OPEN RESEARCH QUESTION:** Temporary weapon-enchantment display-name resolution remains separate and unresolved; do not infer that semantic HELPFUL-aura metadata resolves the opaque temporary-enchantment ID domain.
 
+### Fishing effects and profession equipment
+
+- **RESOLVED RUNTIME FACT, TESTED BOBBER ONLY:** `Limited Edition Rocket Bobber` appeared as an ordinary player `HELPFUL` aura with spell ID `1222880` through the normal aura/BuffFrame path. No formal Bobber classifier was found. It remains unresolved whether every bobber toy/effect uses an aura or comparable localized metadata. See [Aura Filters](AuraFilters.md).
+- **RESOLVED RUNTIME FACT, TESTED FISHING CLIENT:** `C_TradeSkillUI.GetProfessionSlots(Enum.Profession.Fishing)` returned `28`, `29`, and `30`; slot `28` was the fishing tool. Blizzard source independently defines `FishingToolSlot` as `28`. Do not generalize these values to other professions.
+- **RESOLVED RUNTIME FACT, TESTED LURE ONLY:** Bright Baubles (item `6532`) produced `TemporaryItemEnchantInfo` on fishing slot `28` through `C_PaperDollInfo.GetTemporaryEnchantmentInfo`; the observed opaque enchant ID was `265`, timed remaining state decreased, natural expiration returned the query to nil, and reapplication restored it. This resolves direct API exposure for the tested lure, not every lure or profession enchant. See [Managed Item Enchantments](AuraEnchantments.md).
+- **RESOLVED ARCHITECTURAL FACT:** The public PaperDoll getter can expose the fishing-tool temporary enchant while managed AuraContainer cannot register it. The managed provider's closed MainHand/OffHand/Ranged enum and event path remain unchanged.
+- **NARROWED TOOLTIP RESULT:** Slot `28` structured inventory tooltip data exposed generic localized text equivalent to `Fishing Lure (+7 Fishing Skill) (8 min)` as line type `0`, but did not expose the original `Bright Baubles` item identity. Reliable source-item-name resolution remains open. See [Tooltip Integration](TooltipIntegration.md).
+- **OPEN RUNTIME QUESTION:** Does restricted `C_PaperDollInfo.CancelTemporaryEnchantment(28)` support profession-tool lure cancellation? Generated documentation speaks broadly about inventory-slot items, but does not explicitly guarantee arbitrary profession slots; inspected Blizzard callers cover only MainHand, OffHand, and Ranged. Do not claim support until tested deliberately.
+- **OPEN EVENT QUESTION:** No generated event contract was found that guarantees notification specifically when a profession-tool temporary enchant is applied or naturally expires. Determine which change events are reliable in broader runtime testing; expected-expiration rechecks remain an implementation technique, not a Blizzard-required event recipe.
+
 ## Presentation
 
 - **QUESTION:** Is the no-dispel custom text key `""` or `"None"`? Generated documentation and helper behavior appear inconsistent.

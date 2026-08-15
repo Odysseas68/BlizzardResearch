@@ -47,6 +47,43 @@ The function is marked `MayReturnNothing`, `RequiresUnitAuraAccess`, `SecretWhen
 
 **RECOMMENDATION:** Treat this as restricted optional diagnostics: verify API availability, use `pcall`, check that returned values and individual line fields are readable/non-secret, and accept no result. Do not intentionally inspect secret values or imply that structured tooltip lookup bypasses UnitAura restrictions.
 
+## Fishing Profession-Tool Inventory Tooltip
+
+**VERIFIED FROM GENERATED API DOCUMENTATION:** `C_TooltipInfo.GetInventoryItem(unit: UnitToken, slot: luaIndex, hideUselessStats?: bool) -> data: TooltipData | nothing` is `MayReturnNothing` and `SecretArguments = AllowedWhenUntainted` (`TooltipInfoDocumentation.lua:389-405`). The generated `TooltipDataLineType` enum contains `ItemEnchantmentPermanent = 15` and `GemSocketEnchantment = 30`, but no explicit TemporaryEnchantment or FishingLure line type (`TooltipInfoSharedDocumentation.lua:27-83`).
+
+**VERIFIED FROM BLIZZARD IMPLEMENTATION SOURCE:** The profession fishing-tool button inherits the normal PaperDoll item-slot path. Its hover presentation ultimately calls `tooltip:SetInventoryItem("player", equipmentSlot)`, so slot `28` has a supported inventory-tooltip path independent of managed AuraContainer item-enchantment registration (`Blizzard_ProfessionsCrafting.xml:86-120,320-328`; `PaperDollFrame.lua:1761-1775`; `ItemUtil.lua:386-405`).
+
+**RUNTIME EVIDENCE:** While the tested Bright Baubles lure was active on fishing tool slot `28`, `C_TooltipInfo.GetInventoryItem("player", 28)` contained a readable line equivalent to:
+
+```text
+Fishing Lure (+7 Fishing Skill) (8 min)
+```
+
+The observed lure line had numeric line type `0`, corresponding to `TooltipDataLineType.None`; this is not a formal FishingLure classification. The structured result did not expose the original applied item name `Bright Baubles`.
+
+**ANALYSIS:** Inventory-tooltip inspection can confirm a human-readable active fishing-lure effect and remaining time, but the tested structure cannot recover the source lure item's identity. Use structured line data before considering text extraction, and keep any interpretation of the generic localized text explicitly heuristic.
+
+## Restricted-Layout Tooltip Ownership
+
+**VERIFIED FROM BLIZZARD SOURCE:** Adding an AuraGroup applies `UntrustedLayoutScriptExecution` to the self-sizing custom container. The generated forbidden-aspect contract says this aspect propagates to children and anything anchored to the restricted object. Blizzard directs addon-created dependent frames to opt in with `DisableUntrustedLayoutScriptsTemplate` when they must participate in that anchor chain (`Blizzard_CustomAuraContainer.lua:314-321`; `ForbiddenAspectConstantsDocumentation.lua:13-23`; `ForbiddenAspectTemplates.xml:4-22`).
+
+**RUNTIME EVIDENCE:** An otherwise ordinary addon-owned row was positioned relative to and depended on restricted, self-sizing managed-container geometry. Using it as the owner in `GameTooltip:SetOwner(dependentRow, ...)` produced:
+
+```text
+GameTooltip:SetOwner(): Anchoring disallowed as dependent object would inherit forbidden aspects: UntrustedLayoutScriptExecution
+```
+
+This does not mean ordinary addon frames generally cannot own tooltips. The observed condition was the row's restricted layout dependency.
+
+**RUNTIME WORKAROUND:** Owning the tooltip from independent `UIParent` with `ANCHOR_CURSOR`, then applying `GameTooltip:SetInventoryItem("player", fishingToolSlot)`, displayed the fishing-rod inventory tooltip without another observed forbidden-layout error:
+
+```lua
+GameTooltip:SetOwner(UIParent, "ANCHOR_CURSOR")
+GameTooltip:SetInventoryItem("player", fishingToolSlot)
+```
+
+This is the tested workaround for that dependency topology, not a universal tooltip-owner requirement. See [Combat and Security Restrictions](CombatAndSecurityRestrictions.md).
+
 ## Global Styling
 
 **FACT:** `AuraContainerInbound` exposes:

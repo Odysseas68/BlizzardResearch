@@ -248,6 +248,16 @@ The generated return-field names for `IsClassTalentSpell` and `IsPvPTalentSpell`
 
 **RUNTIME EVIDENCE:** A second character exposed different active IDs, `393438` (Draconic Augmentation) and `1233712` (Hearty Well Fed). Their readable semantic spell metadata was sufficient for the experimental classification path. This broadens the observed sample only; it does not establish universal coverage or zero false positives.
 
+### Fishing bobber runtime boundary
+
+**RUNTIME EVIDENCE:** `Limited Edition Rocket Bobber` appeared as an ordinary active player `HELPFUL` aura with spell ID `1222880`. It was readable through the normal unit-aura path and also appeared in Blizzard's default BuffFrame. Observed spell metadata used the same name and a description beginning `Replace your fishing bobber with a bobbing Limited Edition Rocket...`.
+
+**BLIZZARD SOURCE FACT:** The managed public-aura source enumerates ordinary aura instance IDs with `C_UnitAuras.GetUnitAuraInstanceIDs` and fetches them with `C_UnitAuras.GetAuraDataByAuraInstanceID`. A current generated-documentation and Mainline implementation search found no `C_Fishing` namespace, Bobber/Lure classification API, or Bobber-specific AuraContainer source. The tested spell ID and display name do not appear in the UI source because spell records are client data rather than a Lua classifier (`Blizzard_AuraContainerSources.lua:27-38`; `UnitAuraDocumentation.lua:170-204,432-449`).
+
+**ANALYSIS:** This proves only that the tested bobber replacement uses Blizzard's ordinary player-HELPFUL aura representation. It does not prove that every bobber toy produces an aura, that every such effect contains the localized word `bobber`, or that spell ID `1222880` is a permanent bobber database. Name/description matching remains a localization-sensitive addon heuristic, not a Blizzard category. Any product category built from it must not be documented as a native Bobber concept.
+
+**REPRESENTATION DISTINCTION:** The tested bobber and lure were separate Blizzard representations. The bobber was an ordinary player `HELPFUL` aura in the normal aura/BuffFrame path. Bright Baubles was temporary-enchantment state on fishing profession equipment, readable through `C_PaperDollInfo.GetTemporaryEnchantmentInfo(28)` in that test; it was not observed as an ordinary player `HELPFUL` aura and remains outside the managed AuraContainer provider's fixed MainHand/OffHand/Ranged item-enchantment set. See [Managed Item Enchantments](AuraEnchantments.md).
+
 ### Identity and Duration Cautions
 
 **RUNTIME EVIDENCE:** Bloom Skewers used item ID `242302`, while the observed active Well Fed aura used spell ID `1232325`. The item ID was not a valid substitute for the aura spell ID in `includeSpellIDs` or `excludeSpellIDs`.

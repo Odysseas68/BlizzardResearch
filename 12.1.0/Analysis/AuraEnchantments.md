@@ -14,7 +14,7 @@ The current Live installation and source mirror were reverified before this trac
 
 `version.txt`, the active installation's `.build.info`, and `Wow.exe` all report `12.1.0.69299`. The active OBB manifest still accepts interface `120100`. A direct diff from the previous Live audit revision to the current source found no changes in `Blizzard_AuraContainer`, `Blizzard_BuffFrame`, AuraContainer generated documentation, PaperDollInfo documentation, FlowLayout, or their aura dependencies. The only generated-documentation changes in that range are unrelated Discord API changes.
 
-**LIVE CONCLUSION:** Retail 12.1 supports native, managed temporary weapon-enchantment rows. OBB can replace its synthetic weapon-enchantment records with container-owned `CustomAuraButtonTemplate` frames. These rows are not AuraGroups, cannot use aura candidate filters, and do not expose an enchantment-specific display name.
+**LIVE CONCLUSION:** Retail 12.1 supports native, managed temporary weapon-enchantment rows. OBB can replace its synthetic weapon-enchantment records with container-owned `CustomAuraButtonTemplate` frames. These rows are not AuraGroups, cannot use aura candidate filters, and do not expose an enchantment-specific display name. The public PaperDoll temporary-enchantment query can address inventory slots outside the managed provider's closed weapon-slot set; the fishing profession-tool result below demonstrates that broader query surface without expanding managed-container registration.
 
 ## 2. Native Architecture
 
@@ -112,6 +112,52 @@ hasExpirationTime
 ```
 
 Source: `Blizzard_AuraContainerUtil.lua:146-158`; `PaperDollInfoDocumentation.lua:217-231,482-490`.
+
+### Profession fishing equipment: direct-query runtime result
+
+**VERIFIED FROM GENERATED API DOCUMENTATION:** `C_TradeSkillUI.GetProfessionSlots(profession: Profession) -> slots: table<luaIndex>` is `SecretArguments = AllowedWhenUntainted`. `C_PaperDollInfo.GetTemporaryEnchantmentInfo(slot: LuaInventorySlot) -> enchantInfo: TemporaryItemEnchantInfo | nothing` is also `AllowedWhenUntainted`; it returns nothing for an inactive slot and otherwise exposes `enchantID`, `remainingTimeMs`, `chargesRemaining`, and `hasExpirationTime` (`TradeSkillUIDocumentation.lua:527-539`; `PaperDollInfoDocumentation.lua:217-231,482-490`).
+
+**VERIFIED FROM BLIZZARD IMPLEMENTATION SOURCE:** Blizzard's profession UI obtains the current profession's slot list through `C_TradeSkillUI.GetProfessionSlots(info.profession)` and compares those values with its inventory-slot buttons. The Retail profession layout defines `FishingToolSlot` with equipment slot ID `28`; the fishing gear declarations for `29` and `30` remain commented out in that UI layout. Separately, `Enum.InventoryType.IndexProfessionToolType = 29` classifies an item's inventory type and must not be confused with equipment slot `29` (`Blizzard_ProfessionsCrafting.lua:1051-1065`; `Blizzard_ProfessionsCrafting.xml:320-348`; `ItemConstantsDocumentation.lua:140-150`).
+
+**RUNTIME OBSERVED:** On the tested Retail 12.1 client:
+
+```text
+C_TradeSkillUI.GetProfessionSlots(Enum.Profession.Fishing)
+-> 28, 29, 30
+```
+
+Slot `28` was the equipped fishing tool. These values are evidence for Fishing on the tested client, not a universal slot rule for other professions.
+
+**RUNTIME OBSERVED:** Before Bright Baubles (item `6532`) was applied, `C_PaperDollInfo.GetTemporaryEnchantmentInfo(28)` returned no structure. After application it returned the equivalent of:
+
+```text
+enchantID = 265
+remainingTimeMs = approximately 586649-589925
+chargesRemaining = 0
+hasExpirationTime = true
+```
+
+The item ID and enchant ID identify this test case only. Neither is a general lure classifier. The supported conclusion is narrower: a temporary fishing lure applied to the tested fishing profession tool was exposed by `C_PaperDollInfo.GetTemporaryEnchantmentInfo(fishingToolSlot)`.
+
+**RUNTIME OBSERVED:** `remainingTimeMs` decreased while the lure was active. The tested lifecycle was:
+
+```text
+no lure -> nil
+lure applied -> TemporaryItemEnchantInfo present
+active -> remainingTimeMs reports remaining duration
+natural expiration -> nil
+reapplication -> TemporaryItemEnchantInfo present again
+```
+
+Duration is runtime state, not lure-category metadata.
+
+**VERIFIED FROM BLIZZARD IMPLEMENTATION SOURCE:** Deprecated `GetWeaponEnchantInfo()` queries only `INVSLOT_MAINHAND`, `INVSLOT_OFFHAND`, and `INVSLOT_RANGED`. Its nil result after Bright Baubles was applied therefore did not test fishing slot `28` and did not contradict the direct PaperDoll result (`Blizzard_Deprecated/Shared/Deprecated_12_1_0.lua:44-65`).
+
+**ARCHITECTURAL CONCLUSION:** The public PaperDoll getter is broader than the managed AuraContainer item-enchantment provider. The managed enum and inventory map remain closed to MainHand, OffHand, and Ranged, and `AddItemEnchantment` validates against that enum. A readable profession-tool temporary enchant therefore remains unrepresentable through the native managed item-enchantment provider (`Blizzard_AuraContainerShared.lua:9-28`; `Blizzard_CustomAuraContainer.lua:197-205`; `Blizzard_AuraContainerUtil.lua:146-158`).
+
+**EVENT BOUNDARY:** Generated documentation defines `PROFESSION_EQUIPMENT_CHANGED` with `skillLineID`/`isTool`, `PLAYER_EQUIPMENT_CHANGED` with `equipmentSlot`/`hasCurrent`, `UNIT_INVENTORY_CHANGED` with `unitTarget`, and `WEAPON_ENCHANT_CHANGED` as a unique event. None documents a guarantee that it fires when a profession-tool temporary enchant is applied or naturally expires. Event-driven re-evaluation and a scheduled check at expected expiration worked in the runtime experiment, but that combination is implementation evidence rather than a Blizzard-required recipe (`PaperDollInfoDocumentation.lua:375-394`; `UnitDocumentation.lua:4187-4195`; `ItemDocumentation.lua:1883-1886`).
+
+The tested inventory-tooltip result and unresolved profession-tool cancellation contract are recorded in [Tooltip Integration](TooltipIntegration.md) and section 9 below.
 
 ### Lifecycle by condition
 
@@ -317,6 +363,8 @@ Main-hand/off-hand cancellation is independent because each button's internal da
 **SOURCE CONCLUSION:** Right-button cancellation is architecturally supported through the native managed button.
 
 **RUNTIME STATUS:** Native `RightButtonDown` cancellation worked for the tested MainHand lifecycle. OffHand, dual-wield, and combat cancellation remain unvalidated. Generated restrictions and the lack of an explicit combat branch do not by themselves prove every tainted/restricted combat scenario.
+
+**PROFESSION-TOOL CANCELLATION UNRESOLVED:** The generated contract describes `C_PaperDollInfo.CancelTemporaryEnchantment(slot: LuaInventorySlot)` as cancelling active temporary enchantments on inventory-slot items, but marks it `HasRestrictions = true` and `SecretArguments = AllowedWhenUntainted`. It does not explicitly state that arbitrary profession-equipment slots are accepted. All inspected Blizzard callers operate on the managed/BuffFrame MainHand, OffHand, or Ranged paths, and the secure `cancelaura` action explicitly whitelists only those weapon slots (`PaperDollInfoDocumentation.lua:35-45`; `Blizzard_AuraButton.lua:90-103`; `Blizzard_BuffFrame/BuffFrame.lua:667-693,881-884`; `Blizzard_FrameXML/SecureTemplates.lua:463-482`). Slot `28` cancellation was not runtime tested. Do not claim that `C_PaperDollInfo.CancelTemporaryEnchantment(28)` works.
 
 ## 10. Sorting
 
@@ -787,13 +835,14 @@ Primary current Live files:
 - `Blizzard_UIPanels_Game/Mainline/BankFrame.lua`
 - `Blizzard_UnitFrame/Shared/CompactUnitFrame.lua`
 - `Blizzard_ObjectAPI/Mainline/Item.lua`
+- `Blizzard_Professions/Blizzard_ProfessionsCrafting.lua` / `.xml`
 - `Blizzard_BuffFrame/BuffFrame.lua`
 - `Blizzard_RestrictedAddOnEnvironment/SecureAuraHeader.lua` / `.xml`
 - `Blizzard_FrameXML/Mainline/AlertFrames.lua`
 - `Blizzard_UIPanels_Game/Mainline/EventScheduler.lua`
 - `Blizzard_FrameXML/SecureTemplates.lua`
 - `Blizzard_Deprecated/Shared/Deprecated_12_1_0.lua`
-- generated `UITimer`, `PaperDollInfo`, `AuraContainerShared`, `AuraContainerUtil`, `Item`, `System`, `Unit`, `UnitAura`, `Container`, and `LoadingScreen` documentation
+- generated `UITimer`, `PaperDollInfo`, `TradeSkillUI`, `TooltipInfo`, `TooltipInfoShared`, `Item`, `ItemConstants`, `AuraContainerShared`, `AuraContainerUtil`, `System`, `Unit`, `UnitAura`, `Container`, and `LoadingScreen` documentation
 
 Read-only active OBB context:
 
