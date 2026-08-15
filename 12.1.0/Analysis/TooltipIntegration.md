@@ -8,6 +8,8 @@
 
 **HISTORICAL NOTE:** A late-PTR refinement moved periodic tooltip refresh from each AuraButton's `OnUpdate` to the shared forbidden `AuraButtonTooltipMixin`. This is an ownership/refresh implementation change, not a change to the addon-facing managed tooltip behavior.
 
+**CURRENT SOURCE REVALIDATION:** Retail Live and PTR `12.1.0.69299` have byte-identical generated `TooltipInfoDocumentation.lua`. Live uses commit `31c7f7b9cc79e56c986b365c06a6afbcf3c9177b`; PTR uses commit `fe17d3e3bd5d6b5a35816d13f1941aa8927cd2be`.
+
 ## Per-Button Behavior
 
 **FACT:** AuraButton exposes tooltip anchor configuration and combat visibility policy:
@@ -22,6 +24,28 @@
 **FACT:** The native tooltip receives aura identity through the AuraButton rather than requiring addon code to call `GameTooltip:SetUnitAura` with an index.
 
 **ANALYSIS:** This replaces a fragile frozen behavior: tooltip lookup by scan index can diverge after aura list changes and can be restricted when aura data is secret.
+
+## Active Aura Structured Lookup
+
+**BLIZZARD SOURCE FACT:** Retail 12.1 generated documentation defines:
+
+```lua
+C_TooltipInfo.GetUnitAuraByAuraInstanceID(
+    unitToken: UnitTokenRestrictedForAddOns,
+    auraInstanceID: number,
+    filter?: AuraFilters
+) -> data: TooltipData | nothing
+```
+
+The function is marked `MayReturnNothing`, `RequiresUnitAuraAccess`, `SecretWhenUnitAuraRestricted`, and `SecretArguments = "AllowedWhenUntainted"`. Its documentation also states that the effective filters always include at least the normally mutually exclusive `HELPFUL|HARMFUL` pair regardless of the supplied filter. The lookup uses aura-instance identity rather than an aura index (`TooltipInfoDocumentation.lua:1218-1236`).
+
+**BLIZZARD SOURCE FACT:** Blizzard's current tooltip handler consumes `tooltipData.lines` in order with `ipairs` and renders readable `lineData.leftText` and `lineData.rightText` (`TooltipDataHandler.lua:309-349`). This structured result remains subject to the getter's unit-aura restrictions.
+
+**RUNTIME EVIDENCE:** Guarded out-of-combat calls succeeded for active player HELPFUL auras Well Fed, Ethereal Augmentation, and Flask of Alchemical Chaos. Readable ordered lines contained combinations of the aura name, current effect text, and remaining duration.
+
+**ANALYSIS:** Active-aura tooltip text can add current effect context that is absent from some spell names. In the tested sample, the Ethereal Augmentation tooltip did not identify the effect as an Augment Rune. Tooltip text therefore supplied useful diagnostics but not a complete formal category signal.
+
+**RECOMMENDATION:** Treat this as restricted optional diagnostics: verify API availability, use `pcall`, check that returned values and individual line fields are readable/non-secret, and accept no result. Do not intentionally inspect secret values or imply that structured tooltip lookup bypasses UnitAura restrictions.
 
 ## Global Styling
 

@@ -12,6 +12,8 @@
 
 **LIVE CONCLUSION:** Player HELPFUL candidate identity filtering and the OBB compilation rule remain valid unchanged. Player HARMFUL identity maps remain conditional: on an assistable unit such as `player`, both `includeSpellIDs` and `excludeSpellIDs` are skipped unless `C_Secrets.GetSpellAuraSecrecy(spellID)` is `NeverSecret`; skipping the maps does not reject the aura. Private auras enter the same managed group/slot pipeline through the separate private source and are subject to the same identity-eligibility rule.
 
+**CURRENT SOURCE REVALIDATION:** Retail Live `12.1.0.69299`, branch `live`, commit `31c7f7b9cc79e56c986b365c06a6afbcf3c9177b`, and Retail PTR `12.1.0.69299`, branch `ptr`, commit `fe17d3e3bd5d6b5a35816d13f1941aa8927cd2be`, have byte-identical generated `SpellDocumentation.lua`, `TooltipInfoDocumentation.lua`, and `UnitAuraDocumentation.lua`. The candidate-filter setter and group-reset implementation described below is also present in the current Live mirror.
+
 ## Filter Layers
 
 **BLIZZARD SOURCE FACT:** The current framework has three selection layers:
@@ -191,6 +193,71 @@ See `Blizzard_AuraContainerUtil.lua:11-36`.
 | Native item enchantment | Synthetic legacy row is filtered using its numeric enchant ID field | `AddItemEnchantment` options have no candidate filters; entries bypass aura groups | Requires product change |
 | Same aura in multiple groups | Legacy scans/evaluates each group separately | Each managed group owns independent filter string and candidate maps; group loop is non-exclusive | Supported; validate duplicate display policy |
 
+## Spell Metadata and Semantic Classification
+
+### Documented `C_Spell` Surface Investigated
+
+**BLIZZARD SOURCE FACT:** The generated Retail 12.1 `C_Spell` documentation exposes the following metadata calls relevant to inspecting a known active-aura spell ID. `SpellIdentifier` accepts a spell ID, name, name plus subtext, or link where the individual entry documents that type.
+
+| API and exact generated signature | Generated access/return restriction |
+| --- | --- |
+| `DoesSpellExist(spellIdentifier: SpellIdentifier) -> spellExists: bool` | `AllowedWhenUntainted` |
+| `IsSpellDataCached(spellIdentifier: SpellIdentifier) -> isCached: bool` | `AllowedWhenUntainted` |
+| `GetSpellName(spellIdentifier: SpellIdentifier) -> name: cstring \| nothing` | `AllowedWhenTainted`; may return nothing |
+| `GetSpellDescription(spellIdentifier: SpellIdentifier) -> description: string \| nothing` | `AllowedWhenTainted`; may return nothing or an empty string while data is loading |
+| `GetSpellSubtext(spellIdentifier: SpellIdentifier) -> subtext: string \| nothing` | `AllowedWhenTainted`; may return nothing or an empty string while data is loading |
+| `GetBaseSpell(spellIdentifier: SpellIdentifier, spec: number = 0) -> baseSpellID: number` | `AllowedWhenTainted` |
+| `GetOverrideSpell(spellIdentifier: SpellIdentifier, spec: number = 0, onlyKnown: bool = true, ignoreOverrideSpellID: number = 0) -> overrideSpellID: number` | `AllowedWhenUntainted` |
+| `GetSpellInfo(spellIdentifier: SpellIdentifier) -> spellInfo: SpellInfo \| nothing` | `AllowedWhenTainted`; may return nothing |
+| `GetSpellTexture(spellIdentifier: SpellIdentifier) -> iconID: fileID, originalIconID: fileID, conditionalIconID?: fileID \| nothing` | `AllowedWhenTainted`; may return nothing |
+| `GetAuraStatChanges(spellID: number) -> healthChange: number, powerTypeChanges: table<PowerTypeChange>` | `AllowedWhenUntainted` |
+| `GetSpellLevelLearned(spellIdentifier: SpellIdentifier) -> levelLearned: number` | `AllowedWhenTainted` |
+| `GetSpellSkillLineAbilityRank(spellIdentifier: SpellIdentifier) -> rank: number \| nothing` | `AllowedWhenTainted`; may return nothing |
+| `GetSpellMaxCumulativeAuraApplications(spellID: SpellIdentifier) -> cumulativeAura: number` | `AllowedWhenTainted`; result is secret when unit-aura access is restricted |
+
+`SpellInfo` contains `name`, `iconID`, `originalIconID`, `castTime`, `minRange`, `maxRange`, and `spellID`. `PowerTypeChange` contains `powerType` and `amount` (`SpellDocumentation.lua:1100-1120`).
+
+**BLIZZARD SOURCE FACT:** The classification-related predicates examined were:
+
+| Exact generated signature | Secret-argument restriction |
+| --- | --- |
+| `IsConsumableSpell(spellIdentifier: SpellIdentifier) -> consumable: bool` | `AllowedWhenTainted` |
+| `IsClassTalentSpell(spellIdentifier: SpellIdentifier) -> isAutoRepeat: bool` | `AllowedWhenTainted` |
+| `IsPvPTalentSpell(spellIdentifier: SpellIdentifier) -> isAutoRepeat: bool` | `AllowedWhenTainted` |
+| `IsExternalDefensive(spellID: number) -> isExternalDefensive: bool` | `AllowedWhenUntainted` |
+| `IsPriorityAura(spellID: number) -> isHighPriority: bool` | `AllowedWhenUntainted` |
+| `IsSelfBuff(spellID: number) -> hasSelfEffectsOnly: bool` | `AllowedWhenUntainted` |
+| `IsSpellCrowdControl(spellIdentifier: SpellIdentifier) -> isCrowdControl: bool` | `AllowedWhenTainted` |
+| `IsSpellDisabled(spellIdentifier: SpellIdentifier) -> disabled: bool` | `AllowedWhenTainted` |
+| `IsSpellHarmful(spellIdentifier: SpellIdentifier) -> isHarmful: bool` | `AllowedWhenTainted` |
+| `IsSpellHelpful(spellIdentifier: SpellIdentifier) -> isHelpful: bool` | `AllowedWhenTainted` |
+| `IsSpellImportant(spellIdentifier: SpellIdentifier) -> isImportant: bool` | `AllowedWhenTainted` |
+| `IsSpellPassive(spellIdentifier: SpellIdentifier) -> isPassive: bool` | `AllowedWhenTainted` |
+
+The generated return-field names for `IsClassTalentSpell` and `IsPvPTalentSpell` are both currently `isAutoRepeat`; this document preserves that source label rather than silently correcting it.
+
+### Tested Semantic Results
+
+**RUNTIME EVIDENCE:** Out-of-combat inspection covered three active player HELPFUL aura spell IDs: `1232325` (Well Fed), `1234969` (Ethereal Augmentation), and `432021` (Flask of Alchemical Chaos). In that session, spell data existed and was cached; names and descriptions were readable and semantically useful; `IsSpellHelpful` and `IsSelfBuff` returned true; and `IsConsumableSpell` returned false.
+
+**ANALYSIS:** `C_Spell.IsConsumableSpell()` must not be assumed to identify a currently active aura as originating from a consumable. It returned false for all three tested Food, Flask, and Augment-related aura spells. This does not establish that it returns false for every consumable or consumable-related spell.
+
+**BLIZZARD SOURCE FACT:** No documented `C_Spell` entry containing or directly representing Food, Flask, Phial, or Augment Rune categorization was found in the generated Retail 12.1 spell documentation. This is an audit result for the examined namespace, not proof that semantic information cannot exist elsewhere in the client.
+
+**ANALYSIS:** Readable spell names and descriptions can support addon-side semantic research, but string interpretation is not a Blizzard-supported formal classification system. Access must remain guarded, and unreadable, secret, missing, or still-loading values must not be forced.
+
+**RUNTIME EVIDENCE:** A second character exposed different active IDs, `393438` (Draconic Augmentation) and `1233712` (Hearty Well Fed). Their readable semantic spell metadata was sufficient for the experimental classification path. This broadens the observed sample only; it does not establish universal coverage or zero false positives.
+
+### Identity and Duration Cautions
+
+**RUNTIME EVIDENCE:** Bloom Skewers used item ID `242302`, while the observed active Well Fed aura used spell ID `1232325`. The item ID was not a valid substitute for the aura spell ID in `includeSpellIDs` or `excludeSpellIDs`.
+
+**ANALYSIS:** A consumable item ID must not be assumed to equal the spell ID of its active aura. Managed aura candidate filters consume aura spell identities, not source-item identities.
+
+**RUNTIME EVIDENCE:** Flask of Alchemical Chaos first displayed approximately 37 minutes remaining. Applying another flask extended the displayed remaining duration to approximately two hours.
+
+**ANALYSIS:** Duration is runtime effect state that can reflect extension, repeated application, profession behavior, or other gameplay mechanics. It is not reliable Food, Flask, Phial, Augment, potion, or other consumable-category metadata and should not be used as a semantic classifier.
+
 ## Runtime Reconfiguration
 
 **BLIZZARD SOURCE FACT:** `SetAuraGroupCandidateFilters(groupKey, candidateFilters)` is the reconfiguration path for an existing long-lived group. It copies and validates the new table, replaces the group's candidate filters, clears managed group membership, and calls `UpdateAllAuras()` (`Blizzard_CustomAuraContainer.lua:376-382`; `Blizzard_AuraContainerGroups.lua:420-427`).
@@ -207,6 +274,16 @@ See `Blizzard_AuraContainerUtil.lua:11-36`.
 
 **RECOMMENDATION:** Preserve OBB's conservative behavior initially: edit filters out of combat, call the managed setter immediately when allowed, and queue or block combat changes. Managed AuraButtons remain container-owned and must not be manually reordered or rebuilt.
 
+### Live Dynamic Reassignment Evidence
+
+**RUNTIME EVIDENCE:** On current Retail 12.1, already-active readable player HELPFUL auras initially displayed in one managed AuraGroup. After their spell IDs were added to another group's `includeSpellIDs`, added to the original group's `excludeSpellIDs`, and both complete candidate-filter tables were reapplied through the public managed-container setter, the existing aura rows moved to the selected group. The container was not recreated, duplicate presentation was not observed, and managed duration presentation remained correct.
+
+**ANALYSIS:** This validates dynamic reclassification/reassignment for the tested player HELPFUL auras and configuration path. It does not establish the same behavior for every unit, aura source, restriction state, harmful aura, or private aura.
+
+**RUNTIME EVIDENCE:** Repeated filter updates exercised growth, shrink, an empty set, repopulation, and an unchanged set, including the observed sequence `1 -> 0 -> 1 -> 2`. No stale routed row was observed in the tested cases. A session-only last-applied set suppressed redundant setter calls when the compiled set was unchanged.
+
+**ANALYSIS:** The last-applied-set optimization is addon-side design guidance, not a Blizzard API requirement. The framework evidence is limited to the observed refresh/reassignment result after the public setters were called.
+
 ## Filter Editor and Discovery Implications
 
 **BLIZZARD SOURCE FACT:** No addon-facing managed API enumerates active candidate spell IDs or names. `GetAuraGroupFrame` and `GetAuraGroupFrameCount` expose provider-owned frames/capacity, not active aura identity. `AuraButtonPrivateMixin:GetAuraInstance`, group `GetAuras`, source `GetAllAuraInstanceIDs`, and managed caches are private implementation details.
@@ -222,9 +299,9 @@ See `Blizzard_AuraContainerUtil.lua:11-36`.
 - Resolve optional display names/icons from the entered ID through ordinary spell metadata only when permitted; do not require live aura identity.
 - Add curated filter entries where useful.
 - Keep already-known legacy rows only if they are deliberately persisted; the current `filterAuraRows` cache itself is runtime-only.
-- Use no automatic live discovery for a fully managed group until Blizzard exposes a supported API.
+- Do not treat a managed container as an identity-discovery service. Any separate guarded discovery path remains addon-owned and subject to UnitAura restrictions.
 
-**ANALYSIS:** Out-of-combat direct enumeration could be retained only as an explicitly temporary compatibility tool while the legacy scanner still owns that group. It should not become part of the final managed architecture and must not run merely to feed the editor.
+**ANALYSIS:** The current experiment demonstrates that guarded out-of-combat HELPFUL rediscovery can drive public candidate-filter reconfiguration without polling. That does not create a managed identity-enumeration API or make direct enumeration safe in restricted contexts. Keep discovery separate from container-owned presentation and do not run a continuous scanner merely to feed an editor.
 
 ## OBB Compatibility Matrix
 
@@ -238,7 +315,7 @@ See `Blizzard_AuraContainerUtil.lua:11-36`.
 | Timed-only | Requires PTR validation | Source permits `maxDuration = math.huge`, which rejects duration zero; verify inbound/runtime behavior |
 | Timeless-only | Unsupported / unresolved | No minimum-duration or permanent-only candidate field |
 | Maximum bars | Exact native parity | `SetAuraGroupMaxFrameCount` |
-| Enhancement aura routing | Requires product change | No name predicate; use curated IDs or explicit groups |
+| Enhancement aura routing | Requires product change | No formal Food/Flask/Phial/Augment classifier; curated IDs remain exact, while readable semantic metadata is an addon-side experimental technique |
 | Native item enchantment filtering | Unsupported / unresolved | Item enchantments bypass group candidate filters |
 | Spell-name heuristic filtering | Requires product change | No addon predicate/name candidate field |
 | Per-group SavedVariables lists | Exact native parity | Preserve storage; compile to managed maps |
@@ -262,31 +339,32 @@ else:
 
 Apply the result with `SetAuraGroupCandidateFilters(groupKey, candidateFilters)` on the long-lived container. Keep broad `HELPFUL`/`HARMFUL` selection in the filter string and maximum bars in its dedicated setter.
 
-**RECOMMENDATION:** The next implementation slice should be an isolated PTR extension of the already-managed player BUFFS prototype:
+**UPDATED RECOMMENDATION:** For future managed player HELPFUL work:
 
-1. Use saved/manual numeric IDs only; do not add discovery scanning.
-2. Test empty lists, include-only, exclude-only, and the same ID saved in both legacy lists.
-3. Reconfigure the existing group out of combat through `SetAuraGroupCandidateFilters`.
-4. Verify ordinary, combat-secret, aura refresh, removal, reload, and rollback behavior.
-5. Do not migrate player DEBUFFS or native item enchantment filtering until their documented gaps have a product decision.
+1. Treat saved, manual, or curated numeric IDs as the exact configuration source where known.
+2. If optional semantic discovery is used, keep it guarded, player-only, out of combat, and event-driven; do not poll or inspect restricted payloads.
+3. Test empty lists, include-only, exclude-only, unchanged sets, and the same ID saved in both legacy lists.
+4. Reconfigure the existing group out of combat through `SetAuraGroupCandidateFilters` with complete copied tables.
+5. Continue verifying combat-secret, aura refresh, removal, reload, false-positive, and rollback behavior.
+6. Do not extrapolate the player HELPFUL result to player HARMFUL, private auras, or native item-enchantment filtering.
 
-## Open PTR Questions
+## Open Questions and Live Resolutions
 
 1. **RUNTIME TEST REQUIRED:** Does player-BUFFS include/exclude filtering continue correctly through secret-aura combat transitions without addon identity access?
-2. **RUNTIME TEST REQUIRED:** Does post-PLAYER_LOGIN out-of-combat `SetAuraGroupCandidateFilters` immediately release/reassign the expected managed buttons without taint?
+2. **LIVE RUNTIME RESOLUTION:** Post-login out-of-combat candidate-filter reapplication reassigned already-active player HELPFUL rows without container recreation, observed duplication, stale rows, or incorrect managed duration presentation.
 3. **RUNTIME TEST REQUIRED:** What happens if the setter is invoked during combat from tainted addon execution? Until tested, OBB should block or queue it.
 4. **RUNTIME TEST REQUIRED:** How do private auras interact with configured identity maps for player groups?
 5. **RUNTIME TEST REQUIRED:** Does `maxDuration = math.huge` provide reliable timed-only behavior through inbound validation and secret aura updates?
 6. **PRODUCT DECISION:** Should player DEBUFFS preserve list controls as inactive/unsupported, restrict them to never-secret IDs, or adopt a different supported policy?
-7. **PRODUCT DECISION:** Should legacy enhancement routing use curated spell IDs, manual groups, or reduced initial parity?
+7. **PRODUCT DECISION:** Should enhancement routing remain curated-ID-only, incorporate guarded semantic metadata as an explicitly experimental addon-side technique, or use reduced initial parity?
 8. **PRODUCT DECISION:** Which legacy discovered rows, if any, should be persisted before direct scanning is retired?
-9. **SOURCE WATCH:** Re-audit identity eligibility, candidate fields, and runtime setters against the final 12.1 Live source.
+9. **SOURCE WATCH:** Re-audit identity eligibility, candidate fields, spell metadata, and runtime setters when the Retail source advances beyond `12.1.0.69299`.
 
 **LIVE RESOLUTION:** Final Live preserves the documented identity eligibility, candidate fields, setter refresh behavior, and include/exclude precedence. Runtime safety of tainted combat-time setter calls remains unproven and must not be inferred from source parity.
 
 ## References
 
-### Blizzard Retail PTR
+### Blizzard Retail Source
 
 - `Blizzard_AuraContainer/Blizzard_AuraContainer.toc`
 - `Blizzard_AuraContainer/Blizzard_AuraContainerUtil.lua`
@@ -297,6 +375,7 @@ Apply the result with `SetAuraGroupCandidateFilters(groupKey, candidateFilters)`
 - `Blizzard_AuraContainer/Blizzard_AuraContainerSources.lua`
 - `Blizzard_AuraContainer/Blizzard_AuraButton.lua`
 - `Blizzard_FrameXMLUtil/AuraUtil.lua`
+- `Blizzard_APIDocumentationGenerated/SpellDocumentation.lua`
 - `Blizzard_APIDocumentationGenerated/UnitAuraDocumentation.lua`
 
 ### OdysseusBuffBars Read-Only Context

@@ -753,9 +753,11 @@ Source still does not guarantee that a tainted addon call can never encounter a 
 
 This does not validate the legacy UnitAura architecture. The weapon rows come from ordinary PaperDoll data through the deprecated compatibility wrapper; HELPFUL/HARMFUL identity scanning uses restricted UnitAura APIs and remains the reason for migration to managed AuraContainers. Reliable synthetic weapon recovery and unsafe legacy aura identity ownership are separate findings.
 
-### Next research boundary: HELPFUL enhancement routing
+### Resolved research boundary: HELPFUL enhancement auras
 
-Legacy OBB routes Food, Flask, and similar selected player HELPFUL enhancement auras into its ENCHANTMENTS product group. The managed 12.1 prototype naturally exposes those records through BUFFS because they are HELPFUL auras; native MainHand/OffHand item enchantments use the separate PaperDoll provider documented here. Restoring legacy-style Food/Flask placement is therefore a distinct routing and presentation research problem, not part of the now-validated weapon-enchantment startup lifecycle. Future work must decide whether to leave these auras in BUFFS or add an explicitly curated HELPFUL AuraGroup to the ENCHANTMENTS container without restoring name heuristics or direct aura scans.
+Food, Flask/Phial, and Augment-related effects tested in the follow-up experiment were ordinary player HELPFUL aura spell identities. They remain separate from the native MainHand/OffHand PaperDoll provider and from the temporary-enchantment startup lifecycle documented here. Generated `C_Spell` metadata supplied useful readable names and descriptions but no formal Food, Flask, Phial, or Augment Rune categorizer; `IsConsumableSpell` returned false for the tested aura spells. Guarded out-of-combat semantic rediscovery and public candidate-filter reapplication worked for the tested HELPFUL cases, but semantic interpretation and visual routing remain addon policy. See [Aura Filters](AuraFilters.md), [Tooltip Integration](TooltipIntegration.md), and [Combat and Security Restrictions](CombatAndSecurityRestrictions.md).
+
+This finding does not resolve temporary weapon-enchantment display-name lookup. The PaperDoll `enchantID` remains an opaque numeric identity with no verified spell-ID contract or supported name resolver.
 
 **DIAGNOSTIC STATUS:** `OBBEnchantDiag` established staged cold-login publication, variable 69/105/430 inventory-event bursts, rejection of fixed callback ordinals, and the successful quiet-turn architecture. Two genuine cold logins have now validated the resulting lifecycle, so no additional startup timing diagnostics are currently required. The temporary diagnostic addon may be retired after this documentation synchronization.
 
