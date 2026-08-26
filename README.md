@@ -26,4 +26,4 @@ Blizzard UI source is maintained locally and is intentionally **not included** i
 
 ## Current research target
 
-Retail PTR 12.1.x
+Retail Live 12.1.x, with PTR comparison where relevant

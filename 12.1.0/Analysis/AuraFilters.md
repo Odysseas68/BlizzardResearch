@@ -14,6 +14,10 @@
 
 **CURRENT SOURCE REVALIDATION:** Retail Live `12.1.0.69299`, branch `live`, commit `31c7f7b9cc79e56c986b365c06a6afbcf3c9177b`, and Retail PTR `12.1.0.69299`, branch `ptr`, commit `fe17d3e3bd5d6b5a35816d13f1941aa8927cd2be`, have byte-identical generated `SpellDocumentation.lua`, `TooltipInfoDocumentation.lua`, and `UnitAuraDocumentation.lua`. The candidate-filter setter and group-reset implementation described below is also present in the current Live mirror.
 
+**CURRENT LIVE FOLLOW-UP:** Retail Live build `12.1.0.69497`, branch `live`, commit `027d26c3406d3de2cbd2b1f67d468fe033a1bcd4`, contains a candidate-identity eligibility change that landed in build `12.1.0.69465`, commit `86017d5af966acb89d5d46747761c011eb0d783c`. Helpful identity filters are now always permitted for the active player, player-controlled units, group members, and their pets through `UnitIsPlayerControlledOrGroupMember(unitToken)`, even when `UnitCanAssist` can transiently return false in an edge case such as Mind Control. Remaining assistability checks now explicitly ignore immune and uninteractable restrictions so vehicles, teleport transitions, and similar states do not accidentally change identity-filter policy (`Blizzard_AuraContainerUtil.lua:11-46`).
+
+**OBB IMPACT:** This hardens the existing player-HELPFUL BUFFS/`HelpfulEnhancements` candidate-filter contract. It does not change candidate-filter table shape, include/exclude precedence, group refresh, sorting, or setter lifecycle, and it requires no OBB code change.
+
 ## Filter Layers
 
 **BLIZZARD SOURCE FACT:** The current framework has three selection layers:
@@ -166,16 +170,17 @@ An empty blacklist may be omitted. The translation layer should sanitize SavedVa
 | Aura/unit relationship | Identity include/exclude behavior |
 | --- | --- |
 | Spell secrecy is `NeverSecret` | Applied on any unit |
-| Harmful aura on an assistable unit | Skipped unless never-secret |
-| Helpful aura on a non-assistable unit | Skipped unless never-secret |
-| Helpful aura on an assistable unit | Applied |
+| Helpful aura on the active player, a player-controlled unit, a group member, or its pet | Applied, including when ordinary assistability is transiently false |
+| Harmful aura on an assistable unit | Skipped unless never-secret; immune/uninteractable state is ignored for this reaction test |
+| Other helpful aura on a non-assistable unit | Skipped unless never-secret; immune/uninteractable state is ignored for this reaction test |
+| Other helpful aura on an assistable unit | Applied |
 | Harmful aura on a non-assistable unit | Applied |
 
-See `Blizzard_AuraContainerUtil.lua:11-36`.
+See `Blizzard_AuraContainerUtil.lua:11-46`.
 
 **BLIZZARD SOURCE FACT:** When identity filtering is not permitted, both `includeSpellIDs` and `excludeSpellIDs` are skipped; the aura is not automatically rejected. Non-identity candidate filters continue to run (`Blizzard_AuraContainerUtil.lua:38-57`).
 
-**ANALYSIS:** This means the managed pipeline can apply configured spell-ID filters to eligible secret-aware aura data without exposing identity to addon Lua. For OBB's player BUFFS group, helpful auras are on an assistable unit and the source path permits identity matching. For player DEBUFFS, harmful auras on an assistable unit generally bypass identity maps unless the spell is never-secret.
+**ANALYSIS:** This means the managed pipeline can apply configured spell-ID filters to eligible secret-aware aura data without exposing identity to addon Lua. For OBB's player BUFFS and `HelpfulEnhancements` groups, the explicit player/player-controlled/group-member exception now preserves identity matching across Mind Control and similar reaction edge cases. For player DEBUFFS, harmful auras on an assistable unit generally bypass identity maps unless the spell is never-secret; immune and uninteractable state no longer weakens that restriction.
 
 **RUNTIME TEST REQUIRED:** Verify real PTR secret-aura cases for player helpful auras, player harmful auras, and private auras. Source proves where evaluation occurs and when identity maps are eligible; it does not prove every encounter aura's runtime field/secrecy behavior.
 
@@ -368,9 +373,9 @@ Apply the result with `SetAuraGroupCandidateFilters(groupKey, candidateFilters)`
 6. **PRODUCT DECISION:** Should player DEBUFFS preserve list controls as inactive/unsupported, restrict them to never-secret IDs, or adopt a different supported policy?
 7. **PRODUCT DECISION:** Should enhancement routing remain curated-ID-only, incorporate guarded semantic metadata as an explicitly experimental addon-side technique, or use reduced initial parity?
 8. **PRODUCT DECISION:** Which legacy discovered rows, if any, should be persisted before direct scanning is retired?
-9. **SOURCE WATCH:** Re-audit identity eligibility, candidate fields, spell metadata, and runtime setters when the Retail source advances beyond `12.1.0.69299`.
+9. **SOURCE WATCH:** Re-audit identity eligibility, candidate fields, spell metadata, and runtime setters when the Retail source advances beyond `12.1.0.69497`.
 
-**LIVE RESOLUTION:** Final Live preserves the documented identity eligibility, candidate fields, setter refresh behavior, and include/exclude precedence. Runtime safety of tainted combat-time setter calls remains unproven and must not be inferred from source parity.
+**LIVE RESOLUTION:** Current Live preserves the documented candidate fields, setter refresh behavior, and include/exclude precedence while hardening identity eligibility for player/group HELPFUL auras and immune/uninteractable reaction edge cases. Runtime safety of tainted combat-time setter calls remains unproven and must not be inferred from source parity.
 
 ## References
 

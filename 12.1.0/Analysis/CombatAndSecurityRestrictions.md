@@ -8,6 +8,14 @@
 
 **CURRENT SOURCE REVALIDATION:** Retail Live and PTR `12.1.0.69299` have byte-identical generated `UnitAuraDocumentation.lua`, `TooltipInfoDocumentation.lua`, and `SpellDocumentation.lua`. Live uses commit `31c7f7b9cc79e56c986b365c06a6afbcf3c9177b`; PTR uses commit `fe17d3e3bd5d6b5a35816d13f1941aa8927cd2be`.
 
+### Current Live private-alert hardening
+
+**BLIZZARD SOURCE FACT:** Retail Live build `12.1.0.69497`, commit `027d26c3406d3de2cbd2b1f67d468fe033a1bcd4`, contains a `Blizzard_PrivateAurasUI.lua` change that landed in build `12.1.0.69465`, commit `86017d5af966acb89d5d46747761c011eb0d783c`. Blizzard now states that `visualAlert` is secret because it is based on a secret spell ID. Because that value controls a pooled-frame template name and frame pools do not accept a secret template name, `PrivateAuraMixin:ApplyVisualAlert` explicitly calls `secretunwrap(visualAlert)` inside Blizzard's secure environment immediately before `PrivateVisualAlertsManager:AcquireAlert` (`Blizzard_PrivateAurasUI.lua:267-286`).
+
+**SECURITY CLASSIFICATION:** This is a privileged secure-environment workaround, not an addon-facing readability guard or permission to unwrap secret values. The change adds no `issecretvalue` or `canaccessvalue` check, geometry read, layout deferral, combat branch, callback change, anchor-lifecycle change, tooltip change, or AuraButton cancellation change. It confirms that a secret aura-derived value cannot be passed directly into a non-secret pooled-template selector.
+
+**OBB IMPACT:** OBB neither calls `PrivateAuraMixin:ApplyVisualAlert` nor selects AuraButton templates from aura-derived values. Its managed buttons use a statically declared template and Blizzard-owned private-aura presentation, so no OBB code change is required. Addon code must not copy the secure `secretunwrap` operation.
+
 ## Execution Boundary
 
 **FACT:** `Blizzard_AuraContainer` Lua executes with `UseSecureEnvironment: 1`. Addon configuration enters through native object APIs and narrow inbound functions.

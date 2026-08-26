@@ -17,7 +17,9 @@ This index maps the immutable PTR source notes to the engineering analyses. Sour
 
 ## Current Source Baseline
 
-**FACT:** The current inspected implementation is Retail Live build `12.1.0.69299`, interface `120100`, commit `31c7f7b9c`. The previous completed Live audit was build `12.1.0.69273`, commit `eb941aad0`; no AuraContainer, PaperDoll enchantment, layout, or aura-documentation files changed between those revisions.
+**FACT:** The current inspected implementation is Retail Live build `12.1.0.69497`, branch `live`, commit `027d26c3406d3de2cbd2b1f67d468fe033a1bcd4`. The prior comparison point is Live build `12.1.0.69404`, commit `81d15e42f16f3473131880500e7a8c8eb88fa5e6`. The two aura changes in that range landed together in build `12.1.0.69465`, commit `86017d5af966acb89d5d46747761c011eb0d783c`; build `69497` changed only VoiceChat documentation plus `version.txt` after that aura commit.
+
+**FACT:** Current PTR build `12.1.0.69497`, branch `ptr`, commit `e9e8bf68cb7b4177566532f8da9373590759587d`, contains byte-identical current blobs for `Blizzard_AuraContainerUtil.lua` and `Blizzard_PrivateAurasUI.lua`. The separate LIVE and PTR histories establish current cross-channel parity but do not prove a cherry-pick or backport direction.
 
 **OBSERVATION:** Several wishlist items were delivered by PTR6/PTR7: tooltip control, shared styling, ApplicationBar, dynamic group filters, combat creation, layout ordering, multiple dispel textures, false candidate values, sounds, and column-capable flow.
 
@@ -27,7 +29,9 @@ This index maps the immutable PTR source notes to the engineering analyses. Sour
 
 ### Baseline
 
-- **Current Live follow-up:** commit `31c7f7b9c`; `version.txt` = `12.1.0.69299`; Mainline interface `120100`; no aura-relevant changes from the completed Live audit.
+- **Current Live follow-up:** commit `027d26c34`; `version.txt` = `12.1.0.69497`; the audited aura changes landed at `86017d5af` / build `69465` and remained unchanged through the current commit.
+- **Current PTR comparison:** commit `e9e8bf68c`; `version.txt` = `12.1.0.69497`; the two target file blobs are byte-identical to current Live.
+- **Previous Live follow-up:** commit `31c7f7b9c`; `version.txt` = `12.1.0.69299`; no aura-relevant changes from the completed Live audit.
 - **Completed Live audit:** commit `eb941aad0`; `version.txt` = `12.1.0.69273`; Mainline interface `120100`.
 - **PTR:** commit `6e348870e`; `version.txt` = `12.1.0.69273`.
 - **Earlier documented checkpoints:** architecture build 68914 / `d3915c78a`; filtering build 69189 / `a520b6c27`.
@@ -36,7 +40,13 @@ This index maps the immutable PTR source notes to the engineering analyses. Sour
 
 ### Material Changes
 
-**LIVE VS FINAL PTR:** None. AuraContainer lifecycle, managed layout/self-sizing, AuraButton presentation, sorting, candidate filtering, tooltip behavior, security restrictions, BuffFrame ownership, and item enchantments are source-identical.
+**COMPLETED 69273 LIVE VS FINAL PTR:** None. AuraContainer lifecycle, managed layout/self-sizing, AuraButton presentation, sorting, candidate filtering, tooltip behavior, security restrictions, BuffFrame ownership, and item enchantments were source-identical at that completed checkpoint.
+
+**POST-BASELINE LIVE 69465:** `AuraContainerUtil.CanApplyIdentityCandidateFilters` now always permits helpful identity filtering for the active player, player-controlled units, group members, and their pets, including Mind Control edge cases where ordinary `UnitCanAssist` can be false. Its remaining helpful/harmful reaction checks explicitly ignore immune and uninteractable restrictions. This changes only the eligibility gate for spell-ID include/exclude maps; candidate table shape, precedence, setters, assignment, sorting, layout, tooltip, cancellation, and item-enchantment behavior are unchanged.
+
+**POST-BASELINE LIVE 69465:** `PrivateAuraMixin:ApplyVisualAlert` now explicitly unwraps a secret spell-derived visual-alert type inside Blizzard's secure environment before using it as a pooled-frame template selector. This is a PrivateAurasUI-specific secure workaround; it does not change CustomAuraContainer frame ownership, private-aura sourcing, anchor allocation, cleanup, callbacks, layout, tooltip, or combat control flow.
+
+**CURRENT 69497 LIVE VS PTR:** The two target blobs are byte-identical. The local histories show the change entering LIVE at `86017d5af` and the current PTR snapshot at `e9e8bf68c`; they do not establish which channel originated the underlying Blizzard change.
 
 **OLDER PTR CHECKPOINT VS FINAL:** The late PTR series added disabled-container clearing for parsed auras and active enchantments, moved tooltip refresh ownership to the shared forbidden tooltip, routed addon-template frame creation through the global environment, refined default duration formatting, and added optional pandemic-region and stealable/always-show dispel presentation. These changes were already present by `a520b6c27`; no aura-relevant change occurred from that checkpoint to final PTR. They are additive or lifecycle hardening and do not invalidate the enabled managed BUFFS implementation.
 
@@ -49,6 +59,8 @@ This index maps the immutable PTR source notes to the engineering analyses. Sour
 ### BUFFS Compatibility
 
 **CONCLUSION:** The validated Phase B.2 architecture remains supported unchanged: ordinary position root -> self-sizing `CustomAuraContainer` -> container-owned `AuraButton` descendants. `SetIcon`, `SetSpellName`, `SetApplicationCount`, `SetDurationText`, `SetDurationBar`, native tooltip, right-click cancellation, retained/recycled buttons, one-shot dirty updates, and FlowLayout self-sizing remain intact.
+
+The new player/group-member HELPFUL exception directly hardens OBB's BUFFS and `HelpfulEnhancements` identity-filter routing across transient reaction changes. It does not replace OBB's semantic routing policy or require a code change. OBB's broad DEBUFFS group supplies no identity maps, so the harmful reaction-check refinement has no current runtime effect there.
 
 The OBB sorting mappings remain valid:
 
@@ -70,6 +82,8 @@ Managed exclusion is evaluated before inclusion, so omitting the blacklist in wh
 ### Security and Tooltips
 
 **CONCLUSION:** Existing security conclusions are unchanged. Indexed, slot, instance-ID, and enumeration APIs retain UnitAura access restrictions; non-secret requirements remain; AuraButtons retain conditional tainted-access restrictions and forbidden parent/script/layout operations. Final source parity must not be described as proof that untested combat-time mutations are safe.
+
+PrivateAurasUI's secure `secretunwrap` addition confirms a narrower implementation constraint: secret spell-derived values cannot be used directly as frame-pool template selectors. It is not an addon-facing escape hatch and does not change OBB's managed AuraButton or tooltip contract.
 
 Managed AuraButton tooltips remain preferred. Ordinary auras use the native managed `ShowAuraTooltip` path and item enchantments use inventory-item tooltips. Legacy scan-index tooltip suppression on 12.1+ remains justified for OBB's managed path.
 

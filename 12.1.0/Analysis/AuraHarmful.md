@@ -20,6 +20,12 @@ The Live mirror was verified before this trace:
 
 **CONCLUSION:** A broad managed player-HARMFUL container is supported and can use the validated BUFFS ownership, presentation, sorting, and self-sizing architecture. General spell-ID whitelist/blacklist parity is not supported for player HARMFUL auras.
 
+### Current Live follow-up
+
+**BLIZZARD SOURCE FACT:** Retail Live build `12.1.0.69497`, commit `027d26c3406d3de2cbd2b1f67d468fe033a1bcd4`, contains an identity-filter eligibility hardening that landed in build `12.1.0.69465`, commit `86017d5af966acb89d5d46747761c011eb0d783c`. The harmful-unit reaction check now calls `UnitCanAssist("player", unitToken, true, true)`, explicitly ignoring immune and uninteractable restrictions. A player HARMFUL aura therefore continues to skip spell-ID include/exclude maps through vehicle, teleport, and similar transient states unless its spell is `NeverSecret` (`Blizzard_AuraContainerUtil.lua:11-46`).
+
+**OBB IMPACT:** Current OBB DEBUFFS deliberately supplies no candidate filters, so this change does not alter its broad managed HARMFUL membership or require implementation work. It strengthens the documented reason not to reintroduce general player-DEBUFFS identity maps.
+
 ## 2. Managed HARMFUL Architecture
 
 ### Supported custom-container contract
@@ -103,7 +109,7 @@ Evidence:
 2. Otherwise, if the aura is HARMFUL and the unit is assistable by the player, return false.
 3. Otherwise, apply the corresponding HELPFUL/non-assistable restriction or return true.
 
-This is explicit in `Blizzard_AuraContainer/Blizzard_AuraContainerUtil.lua:11-36`. For `unit="player"`, `UnitCanAssist("player", "player")` is true, so a HARMFUL aura is identity-filterable only through the `NeverSecret` exception.
+This is explicit in `Blizzard_AuraContainer/Blizzard_AuraContainerUtil.lua:11-46`. For `unit="player"`, `UnitCanAssist("player", "player", true, true)` is true, so a HARMFUL aura is identity-filterable only through the `NeverSecret` exception. The two true flags deliberately ignore immune and uninteractable restrictions for this policy decision.
 
 **IMPORTANT:** The predicate does not test combat, current secret-value accessibility, or whether an aura is presently returning secret fields. It tests base spell secrecy, aura kind, and unit reaction. A ContextuallySecret player debuff that is readable out of combat still skips spell-ID maps. The same aura does not become filterable or non-filterable merely because combat/restriction state changes; its presentation values may transition, but this identity gate does not.
 
