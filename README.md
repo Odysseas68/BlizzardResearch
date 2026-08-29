@@ -19,10 +19,16 @@ It supports addon development by separating:
   - `OUS/` — Odysseus Utility Suite migration studies.
   - `Experiments/` — Prototype notes and engineering experiments.
   - `Source/` — Original research notes and source material.
+- `Samples/` — Standalone research samples that are not installed addons or production code.
 
 ## Reference source
 
 Blizzard UI source is maintained locally and is intentionally **not included** in this repository.
+
+- Live: `D:\WowDEV\Reference\Blizzard\wow-ui-source`
+- PTR: `D:\WowDEV\Reference\Blizzard\wow-ui-source-ptr`
+
+The reference mirrors are read-only from this repository.
 
 ## Current research target
 

@@ -1,0 +1,6 @@
+## Interface: 120100
+## Title: Slider Comparison
+## Notes: Standalone Retail 12.1 Blizzard slider visual comparison
+## Dependencies: Blizzard_SharedXML
+
+SliderComparison.lua
