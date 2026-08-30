@@ -322,9 +322,100 @@ This family is actively used in Calendar, Communities, Edit Mode, Group Finder, 
 
 `ButtonFrameTemplate` inherits the portrait base, adds the rock background/top streaks, a close button, and an `InsetFrameTemplate` content area. Helper functions change the inset for a bottom button bar or attic and can hide/show the portrait by switching NineSlice layouts. The template does not itself create footer action buttons; `MagicButtonTemplate` is the companion `80 x 22` UIPanel-style footer button.
 
-This family remains pervasive in current Retail, including AddOn List, Cooldown Viewer Settings, Friends, Character, Mail, Merchant, Professions, Housing, Social UI, and many newer systems. Its construction is current and reusable even though the visual language is the traditional Blizzard portrait window.
+This family remains pervasive in current Retail. AddOn List, Cooldown Viewer Settings, Friends, Character, Mail, Merchant, Professions Book, Housing Model Preview, and Social UI include direct `ButtonFrameTemplate` consumers. Auction House, Collections, Encounter Journal, and the main Professions window instead use related `PortraitFrameTemplate` branches; they share the portrait-frame foundation but do not inherit `ButtonFrameTemplate` itself. The focused usage audit below preserves that distinction.
 
 The templates do not set a parent or top-level strata. Decorative children use the established approximately 400/500/510 frame-level convention; `PortraitFrameMixin:SetFrameLevelsFromBaseLevel` is available when the caller needs an explicit base.
+
+#### 5.4.1 `ButtonFrameTemplate` usage in Retail 12.1
+
+##### Authoritative definition and supplied structure
+
+The authoritative Mainline definition is `Interface/AddOns/Blizzard_SharedXML/Mainline/SharedUIPanelTemplates.xml:544-708`. Behavior is split between `Interface/AddOns/Blizzard_SharedXML/PortraitFrame.lua:2-130` and `Mainline/SharedUIPanelTemplates.lua:48-135`; its NineSlice layouts are in `Mainline/NineSliceLayouts.lua:17-79`.
+
+`ButtonFrameTemplate` has no dedicated `ButtonFrameMixin`. Its mixin comes from this chain:
+
+```text
+PortraitFrameBaseTemplate [PortraitFrameMixin -> TitledPanelMixin]
+|-- PortraitFrameTexturedBaseTemplate
+|   `-- PortraitFrameTemplateNoCloseButton
+|       `-- PortraitFrameTemplate
+|           `-- PortraitFrameTemplateMinimizable
+|-- PortraitFrameFlatBaseTemplate
+|   `-- PortraitFrameFlatTemplate
+`-- ButtonFrameBaseTemplate
+    `-- ButtonFrameTemplate
+        |-- ButtonFrameTemplateMinimizable
+        |-- SocialUIIgnoreListFrameTemplate
+        |-- CurrencyTransferMenuTemplate
+        `-- CurrencyTransferLogTemplate
+```
+
+The two top-level branches are related, but neither `PortraitFrameTemplate` nor `ButtonFrameTemplate` inherits the other. Both ultimately inherit `PortraitFrameBaseTemplate`. This is why windows can share title, portrait, close-button, and metal-border language without being `ButtonFrameTemplate` consumers.
+
+`PortraitFrameBaseTemplate` supplies the default `338 x 424` size, `NineSlice`, `PortraitContainer.portrait` with a circular mask, and `TitleContainer.TitleText`. `ButtonFrameBaseTemplate` adds the tiled rock background, top streaks, and `UIPanelCloseButtonDefaultAnchors`. `ButtonFrameTemplate` adds the intrinsic `Inset`, an `InsetFrameTemplate` anchored from `(4, -60)` to `(-6, 26)`.
+
+The caller still owns the parent, top-level strata, placement, movement, title text, portrait texture, feature content, show/hide policy, and action buttons. The inherited size is only a default. A consumer may replace it, as the comparison sample does.
+
+##### Direct, indirect, and related use
+
+An exact Mainline XML inheritance scan, excluding Classic-version directories, found 44 records inheriting the exact `ButtonFrameTemplate` token: four virtual derivatives and 40 concrete declarations. Some concrete records are glue UI, anonymous child frames, or the source example, so the count is evidence of breadth rather than 40 distinct major Retail feature windows. No Lua `CreateFrame(..., "ButtonFrameTemplate")` construction was found; concrete construction in this source snapshot is declared in XML. Lua occurrences predominantly configure title/portrait state or call the shared attic/button-bar/portrait helpers. Comments and `ExampleButtonFrame` were not counted as representative feature use.
+
+Representative verified consumers are:
+
+| Relationship | Concrete consumer | Source-backed role and additions |
+| --- | --- | --- |
+| direct `ButtonFrameTemplate` | `MerchantFrame` | `Blizzard_UIPanels_Game/Mainline/MerchantFrame.xml:91`; vendor item grid, buyback presentation, repair controls, and merchant bottom art are consumer-owned. Lua sets the NPC/buyback title and portrait. |
+| direct `ButtonFrameTemplate` | `CharacterFrame` | `Blizzard_UIPanels_Game/Mainline/CharacterFrame.xml:147`; character subframes and extra inset are consumer-owned. Lua hides the button bar and updates title and portrait by selected subframe. |
+| direct `ButtonFrameTemplate` | `AddonList` | `Blizzard_AddOnList/AddonList.xml:120`; its mixin sets the title and deliberately calls `ButtonFrameTemplate_HidePortrait`. |
+| direct `ButtonFrameTemplate` | `CooldownViewerSettings` | `Blizzard_CooldownViewer/CooldownViewerSettings.xml:153`; the consumer anchors its scrolling content to the inherited `Inset`, sets its title, and supplies a specialization portrait. This is current configuration-window evidence. |
+| direct `ButtonFrameTemplate` | `FriendsFrame`, `MailFrame`, `OpenMailFrame` | `Blizzard_FriendsFrame/Mainline/FriendsFrame.xml:478` and `Blizzard_MailFrame/MailFrame.xml:274,877`; these use the shared shell while supplying tabs, lists, mail content, titles, portraits, and button-bar state. |
+| direct `ButtonFrameTemplate` | `ProfessionsBookFrame` | `Blizzard_ProfessionsBook/Blizzard_ProfessionsBook.xml:325`; Lua supplies the Spellbook portrait/title and hides both attic and button bar. |
+| indirect through `ButtonFrameTemplateMinimizable` | `CommunitiesFrame`, `DressUpFrame` | `Blizzard_Communities/CommunitiesFrame.xml:304` and `Blizzard_UIPanels_Game/Mainline/DressUpFrames.xml:272`. The derivative only changes the NineSlice layout key; each feature separately adds minimization behavior/control. |
+| indirect through feature templates | Social UI ignore list and currency transfer menu/log | `SocialUIIgnoreListFrameTemplate`, `CurrencyTransferMenuTemplate`, and `CurrencyTransferLogTemplate` inherit `ButtonFrameTemplate`; their concrete instances are in `Blizzard_SocialUI/Mainline/SocialUI.xml:45`, `Blizzard_TokenUI/Blizzard_CurrencyTransfer.xml:297`, and `Blizzard_TokenUI/Blizzard_TokenUI.xml:179`. |
+
+`ButtonFrameTemplateMinimizable` should not be read as a complete minimizable window by itself. Its XML contribution is the `PortraitFrameTemplateMinimizable` layout key. `MaximizeMinimizeButtonFrameTemplate` and its mixin are separate shared components that concrete consumers add and initialize.
+
+##### Auction House, Merchant, and other familiar major windows
+
+**AUCTION HOUSE — VERIFIED:** the main `AuctionHouseFrame` directly inherits `PortraitFrameTemplate` in `Blizzard_AuctionHouseUI/Shared/Blizzard_AuctionHouseFrame.xml:4`. It does not directly or indirectly inherit `ButtonFrameTemplate`. Its own XML adds an independent money inset, tabs, search/category/results areas, and buy/sell/auction panes. Its Lua sets the NPC portrait and title through the shared `PortraitFrameMixin`. It therefore uses the related portrait-frame family, not the ButtonFrame inset/footer branch. A nested `GameTimeTutorial` in the WoW Token UI does inherit `ButtonFrameTemplate`, but that does not change the main Auction House conclusion.
+
+**MERCHANT / VENDOR — VERIFIED:** the main `MerchantFrame` directly inherits `ButtonFrameTemplate` in `Blizzard_UIPanels_Game/Mainline/MerchantFrame.xml:91`. `MerchantFrame.lua:268-269` uses the inherited title and portrait methods for the current NPC; lines 507-508 swap them for buyback. The vendor grid, specialized bottom border, repair/sell-junk controls, paging, and buyback content are consumer additions. The user's association between the sample and the Merchant shell is therefore directly source-backed.
+
+**COLLECTIONS AND ENCOUNTER JOURNAL — VERIFIED RELATED FAMILY:** `CollectionsJournal` and `EncounterJournal` directly inherit `PortraitFrameTemplate`, not `ButtonFrameTemplate`, in `Blizzard_Collections/Mainline/Blizzard_Collections.xml:14` and `Blizzard_EncounterJournal/Mainline/Blizzard_EncounterJournal.xml:1333`.
+
+**PROFESSIONS — VERIFIED MIXED USE:** the main `ProfessionsFrame` inherits `PortraitFrameTemplateNoCloseButton, TabSystemOwnerTemplate` in `Blizzard_Professions/Blizzard_ProfessionsFrame.xml:7`; its nested `MinimizedSearchResults` directly inherits `ButtonFrameTemplate` at line 178 of `Blizzard_ProfessionsCrafting.xml`. The separate `ProfessionsBookFrame` is a direct ButtonFrame consumer. “Professions uses ButtonFrameTemplate” is therefore true only for specific windows, not the main modern crafting shell.
+
+**CHARACTER — VERIFIED:** the main `CharacterFrame` directly inherits `ButtonFrameTemplate`. This is direct evidence that the template supports a major multi-page feature window, not merely small dialogs.
+
+##### Portrait, title, inset, attic, and footer behavior
+
+- **Portrait:** the portrait texture region and circular mask are intrinsic, but the texture is caller-supplied and the portrait is optional in practice. `PortraitFrameMixin` provides asset, unit, bag, raw texture, atlas, class, and specialization helpers. `ButtonFrameTemplate_HidePortrait` switches to the `ButtonFrameTemplateNoPortrait` NineSlice layout, hides the portrait, shifts background/inset left anchors, and expands the title anchors from portrait-aware `(58, -24)` offsets to `(0, 0)`. `ShowPortrait` reverses those changes. AddOn List is a concrete hide-portrait example.
+- **Title:** the title region and `SetTitle`/format/color/offset helpers are intrinsic; title text is caller-supplied. Portrait visibility changes the standard title placement through the helpers above.
+- **Inset:** the marble-background NineSlice `InsetFrameTemplate` is intrinsic to `ButtonFrameTemplate`, not to the sibling `PortraitFrameTemplate`. Consumers commonly anchor their content to it, replace its visual contents, add extra insets, or change its top/bottom anchors with shared helpers.
+- **Attic:** “attic” is helper terminology for the tall top content offset. `ShowAttic` uses a 60-pixel top inset and shows top streaks; `HideAttic` moves the inset to 24 pixels and hides the streaks. It is behavior around inherited regions, not an additional child frame named Attic.
+- **Bottom/footer:** the default inset ends 26 pixels above the bottom, leaving space for buttons. `ShowButtonBar` restores that 26-pixel offset; `HideButtonBar` moves it to 4 pixels. The template creates no footer container and no action button. `MagicButtonTemplate` is a separate `80 x 22` companion whose `OnLoad` normalizes bottom-corner and adjacent-button spacing.
+
+In the LIVE-tested `ButtonFrameComparison` sample, the real template supplied the NineSlice metal border, portrait region/mask, title region, close button, rock background/top streaks, intrinsic inset, and default footer reservation. The sample supplied the parent/position, its overriding `600 x 330` size, title text, gear portrait texture, body content, click handler, and the separate `MagicButtonTemplate` labeled `OK`. The screenshot therefore shows real ButtonFrame chrome plus explicit sample configuration; the `OK` button is not automatically created by `ButtonFrameTemplate`.
+
+##### Structural comparison with `SettingsFrameTemplate`
+
+`SettingsFrameTemplate` is a lighter flat shell: flat background, no-portrait `ButtonFrameTemplateNoPortrait` NineSlice layout, title string, and close button. It has no portrait mixin, default size, content inset, attic convention, or reserved bottom button area. Its consumers construct their own content/footer architecture. `ButtonFrameTemplate` supplies substantially more traditional feature-window structure: a default size, portrait-aware title/border, rock background, inset, and standard top/bottom spacing helpers.
+
+Concrete use matches that structural difference. Photo Sharing proves `SettingsFrameTemplate` can be an independent modern flat window, while Merchant, Character, Friends, Mail, AddOn List, Cooldown Viewer Settings, Communities, and other features demonstrate ButtonFrame-family use for richer standalone feature, browser, social, and configuration windows.
+
+##### Edit Mode and the dialog-border family
+
+**VERIFIED:** the visual association is family-level, not an exact template match. Edit Mode's ordinary layout dialogs compose `DialogBorderTemplate` with their own `FontString` titles in `Blizzard_EditMode/Shared/EditModeDialogs.xml:28-62`. `EditModeSystemSettingsDialog` uses `DialogBorderTranslucentTemplate` plus its own title and `UIPanelCloseButton` at lines 254-285. `EditModeManagerFrame` likewise uses `DialogBorderTranslucentTemplate`, its own title, and close button in `EditModeManager.xml:4-50`.
+
+No `DialogBorderDarkTemplate` or `DialogHeaderTemplate` use was found inside `Blizzard_EditMode`. The comparison sample's `DialogBorderDarkTemplate + DialogHeaderTemplate` shell therefore uses the same current shared dialog-border visual system, but it is not the exact Edit Mode composition.
+
+##### Practical role: verified facts and engineering implications
+
+**VERIFIED:** direct consumers demonstrate that `ButtonFrameTemplate` supports substantial standalone feature windows, multi-page browsers, social/mail interfaces, a vendor, and at least one current configuration window. Its supplied portrait-aware border, inset, and optional top/bottom reservations make it more than a bare dialog border. Direct Merchant and Character use source-back the user's association with major Blizzard feature windows. Auction House, Collections, Encounter Journal, and the main Professions frame show that closely related major windows may instead stop at the sibling PortraitFrame branch.
+
+**INFERENCE FOR ADDON DESIGN:** `ButtonFrameTemplate` is a strong candidate when an addon wants a traditional, content-heavy Blizzard feature-window identity with a portrait and bounded inset. It is heavier than necessary for a compact modal dialog and visually more traditional than `SettingsFrameTemplate`. This is an engineering interpretation of current consumers, not a Blizzard compatibility guarantee or a requirement that feature windows use this family.
+
+For future sample, OdysseusBuffBars, or OdysseusUtilitySuite evaluation, keep the distinction concrete: the existing sample correctly exposes the full default ButtonFrame branch; a compact configuration surface may still be better served by `SettingsFrameTemplate`, `DefaultPanel*`, or the dialog-border family. Any production choice should be based on desired structure and LIVE validation, not resemblance alone. No production addon change is made or implied by this research.
 
 ### 5.5 `BasicFrameTemplate` / `BasicFrameTemplateWithInset` — C
 
