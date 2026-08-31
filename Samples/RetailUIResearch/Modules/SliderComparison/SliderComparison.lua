@@ -1,7 +1,8 @@
 -- luacheck: globals CreateFrame UIParent MinimalSliderWithSteppersMixin SlashCmdList
 -- luacheck: globals SLASH_SLIDERCOMPARISON1 SLASH_SLIDERCOMPARISON2
 
-local ADDON_NAME = ...;
+local _, RetailUIResearch = ...;
+local ADDON_NAME = "SliderComparison";
 
 local MIN_VALUE = 0;
 local MAX_VALUE = 100;
@@ -44,6 +45,7 @@ local function CreateBorder(frame)
 end
 
 local comparisonFrame = CreateFrame("Frame", "SliderComparisonFrame", UIParent);
+comparisonFrame:Hide();
 comparisonFrame:SetSize(760, 500);
 comparisonFrame:SetPoint("CENTER");
 comparisonFrame:SetFrameStrata("DIALOG");
@@ -210,10 +212,16 @@ local footer = CreateText(
 );
 footer:SetPoint("BOTTOMLEFT", 20, 16);
 
+RetailUIResearch:RegisterSample({
+	id = "sliders",
+	name = "Sliders",
+	frame = comparisonFrame,
+});
+
 SLASH_SLIDERCOMPARISON1 = "/slidercomparison";
 SLASH_SLIDERCOMPARISON2 = "/sliders";
 SlashCmdList.SLIDERCOMPARISON = function()
-	comparisonFrame:SetShown(not comparisonFrame:IsShown());
+	RetailUIResearch:ToggleSample("sliders");
 end;
 
 print(string.format("%s loaded. Use /slidercomparison to toggle the comparison frame.", ADDON_NAME));

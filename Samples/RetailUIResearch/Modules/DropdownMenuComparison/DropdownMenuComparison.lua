@@ -1,7 +1,8 @@
 -- luacheck: globals CreateFrame UIParent MenuUtil SlashCmdList InCombatLockdown
 -- luacheck: globals SLASH_DROPDOWNMENUCOMPARISON1 SLASH_DROPDOWNMENUCOMPARISON2
 
-local ADDON_NAME = ...;
+local _, RetailUIResearch = ...;
+local ADDON_NAME = "DropdownMenuComparison";
 
 local WINDOW_WIDTH = 920;
 local WINDOW_HEIGHT = 620;
@@ -403,24 +404,27 @@ local function UpdateCombatState(inCombat)
 	end
 end
 
-comparisonFrame:RegisterEvent("PLAYER_LOGIN");
 comparisonFrame:RegisterEvent("PLAYER_REGEN_DISABLED");
 comparisonFrame:RegisterEvent("PLAYER_REGEN_ENABLED");
-comparisonFrame:SetScript("OnEvent", function(self, event)
+comparisonFrame:SetScript("OnEvent", function(_self, event)
 	if event == "PLAYER_REGEN_DISABLED" then
 		UpdateCombatState(true);
 	elseif event == "PLAYER_REGEN_ENABLED" then
 		UpdateCombatState(false);
-	elseif event == "PLAYER_LOGIN" then
-		UpdateCombatState(false);
-		self:Show();
 	end
 end);
+UpdateCombatState(false);
+
+RetailUIResearch:RegisterSample({
+	id = "dropdowns-menus",
+	name = "Dropdowns & Menus",
+	frame = comparisonFrame,
+});
 
 SLASH_DROPDOWNMENUCOMPARISON1 = "/dropdownmenucomparison";
 SLASH_DROPDOWNMENUCOMPARISON2 = "/dmc";
 SlashCmdList.DROPDOWNMENUCOMPARISON = function()
-	comparisonFrame:SetShown(not comparisonFrame:IsShown());
+	RetailUIResearch:ToggleSample("dropdowns-menus");
 end;
 
 PrintStatus("loaded. Use /dropdownmenucomparison or /dmc to toggle the sample window.");

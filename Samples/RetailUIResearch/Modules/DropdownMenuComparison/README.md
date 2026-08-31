@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This is a focused standalone Retail LIVE research addon for validating the modern Blizzard dropdown and menu architecture documented in [DropdownsAndMenus.md](../../12.1.0/Analysis/DropdownsAndMenus.md).
+This is the independently owned Dropdowns & Menus module in the `RetailUIResearch` harness for validating the modern Blizzard dropdown and menu architecture documented in [DropdownsAndMenus.md](../../../../12.1.0/Analysis/DropdownsAndMenus.md).
 
 It is not production framework code and has no dependency on OdysseusBuffBars, OdysseusUtilitySuite, Nightwatch, Blizzard Settings registration, or another addon. It uses no SavedVariables, libraries, secure templates, gameplay automation, polling, or `OnUpdate` loop.
 
@@ -17,13 +17,13 @@ It is not production framework code and has no dependency on OdysseusBuffBars, O
 
 ## Installation and opening
 
-1. Manually copy the complete `DropdownMenuComparison` directory into `_retail_/Interface/AddOns/`.
+1. Manually copy the complete `RetailUIResearch` directory into `_retail_/Interface/AddOns/`.
 2. Start Retail LIVE or reload the UI.
-3. The comparison window opens on `PLAYER_LOGIN`.
-4. Use `/dropdownmenucomparison` or `/dmc` to toggle it.
+3. The launcher opens on `PLAYER_LOGIN`; click `Dropdowns & Menus`.
+4. Use `/dropdownmenucomparison` or `/dmc` as compatibility shortcuts.
 5. Drag the window background while out of combat to reposition it. Position is intentionally not saved.
 
-The TOC declares only `Blizzard_SharedXML`. That shared addon depends on globally loaded `Blizzard_Menu` and supplies the established `DialogBorderDarkTemplate`, `DialogHeaderTemplate`, ordinary button templates, and close button used by the sample shell.
+The root `RetailUIResearch.toc` declares `Blizzard_SharedXML` and `Blizzard_Settings_Shared` for the union of module requirements. `Blizzard_SharedXML` depends on globally loaded `Blizzard_Menu` and supplies the established `DialogBorderDarkTemplate`, `DialogHeaderTemplate`, ordinary button templates, and close button used by this module's shell.
 
 ## Controls included
 
@@ -133,7 +133,7 @@ This result is deliberately narrow. It does **not** mean arbitrary configuration
 ### Sample-only bug corrections
 
 - The initial login error came from using `string.gsub` as the final expression passed to `table.insert`. Because `string.gsub` returns both the transformed string and a replacement count, Lua expanded the call into the three-argument `table.insert(table, position, value)` form and supplied a string where the numeric position belongs. Parenthesizing the `gsub` expression forced a single return value. No other `table.insert` call had this issue.
-- The first combat-state label used a general state query in the event path. It was replaced with direct mapping: `PLAYER_REGEN_DISABLED` calls `UpdateCombatState(true)`, `PLAYER_REGEN_ENABLED` calls `UpdateCombatState(false)`, and `PLAYER_LOGIN` initializes `UpdateCombatState(false)`. `InCombatLockdown()` remains only in the drag guard. The indicator was retested successfully.
+- The first combat-state label used a general state query in the event path. It was replaced with direct mapping: `PLAYER_REGEN_DISABLED` calls `UpdateCombatState(true)` and `PLAYER_REGEN_ENABLED` calls `UpdateCombatState(false)`. The standalone sample formerly initialized the text on `PLAYER_LOGIN`; under `RetailUIResearch`, the launcher owns that event and this module initializes `UpdateCombatState(false)` when loaded. `InCombatLockdown()` remains only in the drag guard. The event mapping was previously retested successfully.
 
 Both corrections belong to the sample harness; neither changes or qualifies the underlying Blizzard_Menu architecture.
 

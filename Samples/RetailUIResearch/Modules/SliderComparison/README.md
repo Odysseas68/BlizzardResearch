@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This is a minimal standalone research addon for visually comparing reusable Blizzard slider designs on Retail 12.1. It has no relationship to the runtime code of OdysseusBuffBars or OdysseusUtilitySuite and must be copied into the game manually for testing.
+This is the independently owned slider module in the `RetailUIResearch` harness for visually comparing reusable Blizzard slider designs on Retail 12.1. It has no relationship to the runtime code of OdysseusBuffBars or OdysseusUtilitySuite.
 
 The sample has no SavedVariables, Ace, LibSharedMedia, LibDataBroker, OBB, or OUS dependency.
 
@@ -11,7 +11,7 @@ The sample has no SavedVariables, Ace, LibSharedMedia, LibDataBroker, OBB, or OU
 - Retail build: `12.1.0.69497`
 - Live source: branch `live`, commit `027d26c3406d3de2cbd2b1f67d468fe033a1bcd4`
 - PTR source: branch `ptr`, commit `e9e8bf68cb7b4177566532f8da9373590759587d`
-- Live/PTR result: the 24 slider-related files listed in [SliderControls.md](../../12.1.0/Analysis/SliderControls.md) are byte-identical.
+- Live/PTR result: the 24 slider-related files listed in [SliderControls.md](../../../../12.1.0/Analysis/SliderControls.md) are byte-identical.
 
 The corrected sample was successfully tested by the user on Retail LIVE build `12.1.0.69497`.
 
@@ -43,10 +43,10 @@ All rows use range `0-100`, initial value `50`, and step `5`.
 
 ## Dependency
 
-The TOC declares only:
+The root `RetailUIResearch.toc` includes `Blizzard_SharedXML` for this module. It also declares `Blizzard_Settings_Shared` for the separate Buttons & Frames module's `SettingsFrameTemplate` comparison.
 
 ```text
-## Dependencies: Blizzard_SharedXML
+## Dependencies: Blizzard_SharedXML, Blizzard_Settings_Shared
 ```
 
 `Blizzard_SharedXML` defines all five demonstrated templates. The sample does not load or depend on `Blizzard_Settings`.
@@ -62,13 +62,13 @@ The TOC declares only:
 - `OptionsSliderTemplate` is explicitly in Blizzard's deprecated templates.
 - The color picker's opacity slider is a named global vertical instance, not a reusable virtual template.
 
-See [SliderControls.md](../../12.1.0/Analysis/SliderControls.md) for source paths, dimensions, state behavior, dependency tracing, classifications, and risks.
+See [SliderControls.md](../../../../12.1.0/Analysis/SliderControls.md) for source paths, dimensions, state behavior, dependency tracing, classifications, and risks.
 
 ## How to test
 
-1. Manually copy the `SliderComparison` directory into `_retail_/Interface/AddOns/`.
+1. Manually copy the complete `RetailUIResearch` directory into `_retail_/Interface/AddOns/`.
 2. Start World of Warcraft or reload the UI.
-3. The comparison frame should appear automatically. Use `/slidercomparison` or `/sliders` to toggle it.
+3. The `RetailUIResearch` launcher opens automatically; click `Sliders`. Use `/slidercomparison` or `/sliders` as compatibility shortcuts.
 4. Drag each thumb and test each available decrement/increment or numeric-entry control.
 5. Check endpoint disabled states at 0 and 100.
 6. Drag the comparison frame by its background to confirm movement.

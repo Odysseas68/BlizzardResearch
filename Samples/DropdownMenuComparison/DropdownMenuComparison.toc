@@ -1,6 +1,0 @@
-## Interface: 120100
-## Title: Dropdown Menu Comparison
-## Notes: Standalone Retail 12.1 Blizzard dropdown and menu runtime research sample
-## Dependencies: Blizzard_SharedXML
-
-DropdownMenuComparison.lua

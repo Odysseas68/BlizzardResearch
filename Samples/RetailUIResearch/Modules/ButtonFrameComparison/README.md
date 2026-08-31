@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This is a small standalone research addon for visually comparing retained Blizzard-native button and frame/dialog designs on Retail 12.1. It is not production OdysseusBuffBars or OdysseusUtilitySuite code and must be copied into the game manually for testing.
+This is the independently owned Buttons & Frames module in the `RetailUIResearch` harness for visually comparing retained Blizzard-native button and frame/dialog designs on Retail 12.1. It is not production OdysseusBuffBars or OdysseusUtilitySuite code.
 
-The implementation follows [ButtonsAndFrames.md](../../12.1.0/Analysis/ButtonsAndFrames.md). It does not use SavedVariables, secure frames, polling, aura APIs, Settings categories, or production-addon dependencies.
+The implementation follows [ButtonsAndFrames.md](../../../../12.1.0/Analysis/ButtonsAndFrames.md). It does not use SavedVariables, secure frames, polling, aura APIs, Settings categories, or production-addon dependencies.
 
 ## Source baseline
 
@@ -15,13 +15,13 @@ The implementation follows [ButtonsAndFrames.md](../../12.1.0/Analysis/ButtonsAn
 
 ## Installation and opening
 
-1. Manually copy the entire `ButtonFrameComparison` directory into `_retail_/Interface/AddOns/`.
+1. Manually copy the complete `RetailUIResearch` directory into `_retail_/Interface/AddOns/`.
 2. Start Retail LIVE or reload the UI.
-3. The comparison window opens automatically.
-4. Use `/buttonframecomparison` or `/bbfsample` to toggle it.
+3. The `RetailUIResearch` launcher opens automatically; click `Buttons & Frames`.
+4. Use `/buttonframecomparison` or `/bbfsample` as compatibility shortcuts.
 5. Drag the neutral outer window by its background to reposition it for screenshots.
 
-Do not copy individual files without their containing `ButtonFrameComparison` directory.
+Do not install the module directory as a separate addon; its standalone TOC was retired.
 
 ## Button candidates
 
@@ -50,7 +50,7 @@ Only one shell is shown at a time. The default is `UIPanelDialogTemplate`. Each 
 
 ## Dependencies
 
-The TOC declares only:
+The root `RetailUIResearch.toc` declares:
 
 ```text
 ## Dependencies: Blizzard_SharedXML, Blizzard_Settings_Shared

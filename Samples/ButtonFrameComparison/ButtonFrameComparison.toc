@@ -1,6 +1,0 @@
-## Interface: 120100
-## Title: Button and Frame Comparison
-## Notes: Standalone Retail 12.1 Blizzard button and frame visual comparison
-## Dependencies: Blizzard_SharedXML, Blizzard_Settings_Shared
-
-ButtonFrameComparison.lua

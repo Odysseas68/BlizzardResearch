@@ -1,7 +1,8 @@
 -- luacheck: globals CreateFrame UIParent CreateRadioButtonGroup SlashCmdList
 -- luacheck: globals SLASH_BUTTONFRAMECOMPARISON1 SLASH_BUTTONFRAMECOMPARISON2
 
-local ADDON_NAME = ...;
+local _, RetailUIResearch = ...;
+local ADDON_NAME = "ButtonFrameComparison";
 
 local WINDOW_WIDTH = 1120;
 local WINDOW_HEIGHT = 820;
@@ -40,6 +41,7 @@ local function CreateNeutralContainer(frame)
 end
 
 local comparisonFrame = CreateFrame("Frame", "ButtonFrameComparisonFrame", UIParent);
+comparisonFrame:Hide();
 comparisonFrame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 comparisonFrame:SetPoint("CENTER");
 comparisonFrame:SetFrameStrata("DIALOG");
@@ -409,10 +411,16 @@ end);
 
 ShowShell(selectedShellIndex);
 
+RetailUIResearch:RegisterSample({
+	id = "buttons-frames",
+	name = "Buttons & Frames",
+	frame = comparisonFrame,
+});
+
 SLASH_BUTTONFRAMECOMPARISON1 = "/buttonframecomparison";
 SLASH_BUTTONFRAMECOMPARISON2 = "/bbfsample";
 SlashCmdList.BUTTONFRAMECOMPARISON = function()
-	comparisonFrame:SetShown(not comparisonFrame:IsShown());
+	RetailUIResearch:ToggleSample("buttons-frames");
 end;
 
 print(string.format(
