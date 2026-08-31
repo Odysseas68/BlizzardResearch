@@ -1,6 +1,6 @@
 # RetailUIResearch
 
-`RetailUIResearch` is an unofficial third-party development and research harness for the repository's Retail LIVE UI-control samples. It combines four previously standalone addons so they can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
+`RetailUIResearch` is an unofficial third-party development and research harness for the repository's Retail LIVE UI-control samples. It combines four previously standalone addons plus the focused EditBox runtime module so they can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
 
 This is a test harness, not production addon infrastructure. Patterns demonstrated by a module should not be copied into a production addon without considering its corresponding research conclusions, combat behavior, taint risks, ownership model, and product requirements.
 
@@ -17,7 +17,7 @@ Core does not provide Blizzard-control wrappers, and modules do not call impleme
 The consolidated harness was tested by the user on Retail LIVE `12.1.0.69497`.
 
 - On login/reload, only the launcher opened; no module window auto-opened.
-- All four modules opened from their launcher buttons.
+- All five modules opened from their launcher buttons. EditBoxComparison completed the supplied LIVE runtime test out of combat and during actual combat.
 - Selecting another module hid the previously selected module.
 - Closing a module left the launcher usable, and clicking its launcher button reopened it.
 - Retained module slash commands opened/toggled the correct module through Core and participated in the one-sample-at-a-time behavior.
@@ -25,12 +25,13 @@ The consolidated harness was tested by the user on Retail LIVE `12.1.0.69497`.
 
 ## Launcher and commands
 
-The launcher opens after `PLAYER_LOGIN`, remains available while a sample is open, and uses four ordinary `UIPanelButtonTemplate` buttons:
+The launcher opens after `PLAYER_LOGIN`, remains available while a sample is open, and uses five ordinary `UIPanelButtonTemplate` buttons:
 
 - Sliders
 - Buttons & Frames
 - Dropdowns & Menus
 - Checkboxes & Radios
+- EditBoxes
 
 Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug commands remain available and route through the same visibility coordinator:
 
@@ -38,6 +39,7 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `/buttonframecomparison` or `/bbfsample`
 - `/dropdownmenucomparison` or `/dmc`
 - `/checkboxradiocomparison` or `/crc`
+- `/editboxcomparison` or `/ebc`
 
 ## Modules and evidence ownership
 
@@ -45,8 +47,9 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `Modules/ButtonFrameComparison/`
 - `Modules/DropdownMenuComparison/`
 - `Modules/CheckboxRadioComparison/`
+- `Modules/EditBoxComparison/`
 
-Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. All four user-authored LIVE screenshots remain beside their corresponding module Lua and README. `CheckboxRadioComparison` has now completed the supplied LIVE runtime test; keyboard, gamepad, and narration behavior remains optional and was not exhaustively validated.
+Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. All five user-authored LIVE screenshots remain beside their corresponding module Lua and README. `EditBoxComparison` and `CheckboxRadioComparison` have completed their supplied LIVE runtime tests; keyboard, gamepad, and narration behavior remains optional and was not exhaustively validated.
 
 Detailed source-backed research documents remain under `12.1.0/Analysis/`.
 

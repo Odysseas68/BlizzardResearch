@@ -9,3 +9,4 @@ Modules/SliderComparison/SliderComparison.lua
 Modules/ButtonFrameComparison/ButtonFrameComparison.lua
 Modules/DropdownMenuComparison/DropdownMenuComparison.lua
 Modules/CheckboxRadioComparison/CheckboxRadioComparison.lua
+Modules/EditBoxComparison/EditBoxComparison.lua

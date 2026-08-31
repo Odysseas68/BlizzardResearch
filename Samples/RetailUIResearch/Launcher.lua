@@ -10,7 +10,7 @@ end
 
 local launcherFrame = CreateFrame("Frame", "RetailUIResearchLauncherFrame", UIParent);
 launcherFrame:Hide();
-launcherFrame:SetSize(590, 150);
+launcherFrame:SetSize(730, 150);
 launcherFrame:SetPoint("CENTER", 0, 310);
 launcherFrame:SetFrameStrata("DIALOG");
 launcherFrame:SetClampedToScreen(true);
@@ -41,6 +41,7 @@ local sampleButtons = {
 	{id = "buttons-frames", label = "Buttons & Frames"},
 	{id = "dropdowns-menus", label = "Dropdowns & Menus"},
 	{id = "checkboxes-radios", label = "Checkboxes & Radios"},
+	{id = "editboxes", label = "EditBoxes"},
 };
 
 for index, buttonInfo in ipairs(sampleButtons) do
