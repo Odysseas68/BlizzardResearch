@@ -50,6 +50,7 @@ local sampleButtons = {
 	{id = "checkboxes-radios", label = "Checkboxes & Radios"},
 	{id = "editboxes", label = "EditBoxes"},
 	{id = "scrollbox", label = "ScrollBox"},
+	{id = "color-picker", label = "Color Picker"},
 };
 
 local launcherHeight = BUTTON_TOP
