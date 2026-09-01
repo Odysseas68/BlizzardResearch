@@ -2,6 +2,13 @@
 
 local ADDON_NAME, RetailUIResearch = ...;
 
+local LAUNCHER_WIDTH = 280;
+local BUTTON_WIDTH = 220;
+local BUTTON_HEIGHT = 26;
+local BUTTON_SPACING = 8;
+local BUTTON_TOP = 82;
+local FOOTER_HEIGHT = 48;
+
 local function CreateText(parent, fontObject, text)
 	local fontString = parent:CreateFontString(nil, "ARTWORK", fontObject);
 	fontString:SetText(text);
@@ -10,8 +17,6 @@ end
 
 local launcherFrame = CreateFrame("Frame", "RetailUIResearchLauncherFrame", UIParent);
 launcherFrame:Hide();
-launcherFrame:SetSize(730, 150);
-launcherFrame:SetPoint("CENTER", 0, 310);
 launcherFrame:SetFrameStrata("DIALOG");
 launcherFrame:SetClampedToScreen(true);
 launcherFrame:SetMovable(true);
@@ -32,9 +37,11 @@ CreateFrame("Button", nil, launcherFrame, "UIPanelCloseButtonDefaultAnchors");
 local subtitle = CreateText(
 	launcherFrame,
 	"GameFontHighlightSmall",
-	"Unofficial third-party Retail LIVE research harness. Open one independently owned sample."
+	"Retail LIVE research harness. Open one independently owned sample."
 );
 subtitle:SetPoint("TOP", 0, -48);
+subtitle:SetWidth(LAUNCHER_WIDTH - 32);
+subtitle:SetJustifyH("CENTER");
 
 local sampleButtons = {
 	{id = "sliders", label = "Sliders"},
@@ -42,12 +49,20 @@ local sampleButtons = {
 	{id = "dropdowns-menus", label = "Dropdowns & Menus"},
 	{id = "checkboxes-radios", label = "Checkboxes & Radios"},
 	{id = "editboxes", label = "EditBoxes"},
+	{id = "scrollbox", label = "ScrollBox"},
 };
+
+local launcherHeight = BUTTON_TOP
+	+ (#sampleButtons * BUTTON_HEIGHT)
+	+ ((#sampleButtons - 1) * BUTTON_SPACING)
+	+ FOOTER_HEIGHT;
+launcherFrame:SetSize(LAUNCHER_WIDTH, launcherHeight);
+launcherFrame:SetPoint("CENTER", 0, 250);
 
 for index, buttonInfo in ipairs(sampleButtons) do
 	local button = CreateFrame("Button", nil, launcherFrame, "UIPanelButtonTemplate");
-	button:SetSize(130, 26);
-	button:SetPoint("TOPLEFT", 20 + ((index - 1) * 140), -82);
+	button:SetSize(BUTTON_WIDTH, BUTTON_HEIGHT);
+	button:SetPoint("TOP", 0, -BUTTON_TOP - ((index - 1) * (BUTTON_HEIGHT + BUTTON_SPACING)));
 	button:SetText(buttonInfo.label);
 	button:SetScript("OnClick", function()
 		if not RetailUIResearch:OpenSample(buttonInfo.id) then
@@ -62,6 +77,8 @@ local hint = CreateText(
 	"The launcher remains open; selecting another sample hides the previously selected sample."
 );
 hint:SetPoint("BOTTOM", 0, 18);
+hint:SetWidth(LAUNCHER_WIDTH - 32);
+hint:SetJustifyH("CENTER");
 
 launcherFrame:RegisterEvent("PLAYER_LOGIN");
 launcherFrame:SetScript("OnEvent", function(self, event)

@@ -1,6 +1,6 @@
 # RetailUIResearch
 
-`RetailUIResearch` is an unofficial third-party development and research harness for the repository's Retail LIVE UI-control samples. It combines four previously standalone addons plus the focused EditBox runtime module so they can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
+`RetailUIResearch` is an unofficial third-party development and research harness for the repository's six Retail LIVE-validated UI-control modules. They can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
 
 This is a test harness, not production addon infrastructure. Patterns demonstrated by a module should not be copied into a production addon without considering its corresponding research conclusions, combat behavior, taint risks, ownership model, and product requirements.
 
@@ -17,7 +17,7 @@ Core does not provide Blizzard-control wrappers, and modules do not call impleme
 The consolidated harness was tested by the user on Retail LIVE `12.1.0.69497`.
 
 - On login/reload, only the launcher opened; no module window auto-opened.
-- All five modules opened from their launcher buttons. EditBoxComparison completed the supplied LIVE runtime test out of combat and during actual combat.
+- All six modules opened from their launcher buttons. EditBoxComparison and ScrollBoxComparison completed their supplied LIVE runtime tests out of combat and during actual combat.
 - Selecting another module hid the previously selected module.
 - Closing a module left the launcher usable, and clicking its launcher button reopened it.
 - Retained module slash commands opened/toggled the correct module through Core and participated in the one-sample-at-a-time behavior.
@@ -25,13 +25,14 @@ The consolidated harness was tested by the user on Retail LIVE `12.1.0.69497`.
 
 ## Launcher and commands
 
-The launcher opens after `PLAYER_LOGIN`, remains available while a sample is open, and uses five ordinary `UIPanelButtonTemplate` buttons:
+The launcher opens after `PLAYER_LOGIN`, remains available while a sample is open, and uses a compact vertical stack of six ordinary `UIPanelButtonTemplate` buttons. Its height derives from the number of launcher entries, so later modules extend the same column without redesigning the window:
 
 - Sliders
 - Buttons & Frames
 - Dropdowns & Menus
 - Checkboxes & Radios
 - EditBoxes
+- ScrollBox
 
 Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug commands remain available and route through the same visibility coordinator:
 
@@ -40,6 +41,7 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `/dropdownmenucomparison` or `/dmc`
 - `/checkboxradiocomparison` or `/crc`
 - `/editboxcomparison` or `/ebc`
+- `/scrollboxcomparison` or `/sbc`
 
 ## Modules and evidence ownership
 
@@ -48,8 +50,9 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `Modules/DropdownMenuComparison/`
 - `Modules/CheckboxRadioComparison/`
 - `Modules/EditBoxComparison/`
+- `Modules/ScrollBoxComparison/`
 
-Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. All five user-authored LIVE screenshots remain beside their corresponding module Lua and README. `EditBoxComparison` and `CheckboxRadioComparison` have completed their supplied LIVE runtime tests; keyboard, gamepad, and narration behavior remains optional and was not exhaustively validated.
+Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. All six validated modules retain their user-authored LIVE screenshots beside their Lua and README. `ScrollBoxComparison` completed its supplied fixed-list, variable-extent, grid, one-child ScrollFrame, resize/scale, diagnostic-copy, and narrow non-secure combat tests. Keyboard, gamepad, narration, and accessibility behavior was not exhaustively validated.
 
 Detailed source-backed research documents remain under `12.1.0/Analysis/`.
 
