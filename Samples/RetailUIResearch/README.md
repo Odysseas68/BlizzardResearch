@@ -1,6 +1,6 @@
 # RetailUIResearch
 
-`RetailUIResearch` is an unofficial third-party development and research harness for seven Retail LIVE-tested UI-control modules. They can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
+`RetailUIResearch` is an unofficial third-party development and research harness for eight Retail LIVE-tested UI-control modules. They can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
 
 This is a test harness, not production addon infrastructure. Patterns demonstrated by a module should not be copied into a production addon without considering its corresponding research conclusions, combat behavior, taint risks, ownership model, and product requirements.
 
@@ -17,7 +17,7 @@ Core does not provide Blizzard-control wrappers, and modules do not call impleme
 The consolidated harness was tested by the user on Retail LIVE `12.1.0.69497`.
 
 - On login/reload, only the launcher opened; no module window auto-opened.
-- All six modules present at consolidation opened from their launcher buttons. EditBoxComparison and ScrollBoxComparison completed their supplied LIVE runtime tests out of combat and during actual combat. ColorPickerComparison was added afterward and completed its native lifecycle, singleton, scale/layering, and qualified actual-combat runtime pass.
+- All six modules present at consolidation opened from their launcher buttons. EditBoxComparison and ScrollBoxComparison completed their supplied LIVE runtime tests out of combat and during actual combat. ColorPickerComparison was added afterward and completed its native lifecycle, singleton, scale/layering, and qualified actual-combat runtime pass. DialogsAndPopupsComparison subsequently completed its callback-order, keyboard-versus-mouse, cover, scale, and narrow actual-combat runtime pass.
 - Selecting another module hid the previously selected module.
 - Closing a module left the launcher usable, and clicking its launcher button reopened it.
 - Retained module slash commands opened/toggled the correct module through Core and participated in the one-sample-at-a-time behavior.
@@ -34,6 +34,7 @@ The launcher opens after `PLAYER_LOGIN`, remains available while a sample is ope
 - EditBoxes
 - ScrollBox
 - Color Picker
+- Dialogs / Popups
 
 Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug commands remain available and route through the same visibility coordinator:
 
@@ -44,6 +45,7 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `/editboxcomparison` or `/ebc`
 - `/scrollboxcomparison` or `/sbc`
 - `/colorpickercomparison` or `/cpc`
+- `/dialogsandpopupscomparison` or `/dapc`
 
 ## Modules and evidence ownership
 
@@ -54,8 +56,9 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `Modules/EditBoxComparison/`
 - `Modules/ScrollBoxComparison/`
 - `Modules/ColorPickerComparison/`
+- `Modules/DialogsAndPopupsComparison/`
 
-Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. The six previously validated modules retain their user-authored LIVE screenshots beside their Lua and README. `ColorPickerComparison` retains two user-authored LIVE screenshots and records a qualified combat result: ordinary non-secure picker interaction worked, but action-bar ability activation was unavailable while the picker was visible for an unresolved input-path reason. `ScrollBoxComparison` completed its supplied fixed-list, variable-extent, grid, one-child ScrollFrame, resize/scale, diagnostic-copy, and narrow non-secure combat tests. Keyboard, gamepad, narration, and accessibility behavior was not exhaustively validated.
+Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. The modules retain their user-authored LIVE visual references beside their Lua and README; `ColorPickerComparison` retains two screenshots and `DialogsAndPopupsComparison.png` is the Dialogs / Popups default-window reference. `ColorPickerComparison` records a qualified combat result and an unresolved gameplay-input observation. `ScrollBoxComparison` completed its supplied fixed-list, variable-extent, grid, one-child ScrollFrame, resize/scale, diagnostic-copy, and narrow non-secure combat tests. `DialogsAndPopupsComparison` verified that an uncovered StaticPopup blocked the tested normal action keybind while direct mouse activation of the same usable action worked, that `fullScreenCover` separately blocked background interaction, that sample-owned and UIParent-owned scaling remained distinct, and that harmless A/B/C/D-no-cover operations worked in the supplied narrow combat pass. Keyboard, gamepad, narration, and accessibility behavior was not exhaustively validated.
 
 Detailed source-backed research documents remain under `12.1.0/Analysis/`.
 
