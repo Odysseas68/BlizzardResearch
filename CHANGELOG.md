@@ -14,3 +14,4 @@ This changelog records repository history beginning with the creation of the Bli
 - OUS migration studies
 - Retail 12.1 slider-control source audit and LIVE runtime validation
 - Standalone `Samples/SliderComparison` visual comparison addon and tested LIVE screenshot
+- AsyncCallbackSystem / ItemEventListener investigation analysis, standalone diagnostics, and RetailUIResearch diagnostic integration

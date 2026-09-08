@@ -1,9 +1,11 @@
 ## Interface: 120100
 ## Title: Retail UI Research
 ## Notes: Unofficial third-party Retail UI research harness
-## Dependencies: Blizzard_SharedXML, Blizzard_Settings_Shared, Blizzard_ColorPickerFrame, Blizzard_StaticPopup_Game
+## Dependencies: Blizzard_SharedXML, Blizzard_Settings_Shared, Blizzard_ColorPickerFrame, Blizzard_StaticPopup_Game, Blizzard_ObjectAPI
 
+Modules/AsyncItemCallbacksDiagnostic/Bootstrap.lua
 Core.lua
+Modules/AsyncItemCallbacksDiagnostic/AsyncItemCallbacksDiagnostic.lua
 Launcher.lua
 Modules/SliderComparison/SliderComparison.lua
 Modules/ButtonFrameComparison/ButtonFrameComparison.lua

@@ -1,12 +1,12 @@
 # RetailUIResearch
 
-`RetailUIResearch` is an unofficial third-party development and research harness for eight Retail LIVE-tested UI-control modules. They can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
+`RetailUIResearch` is an unofficial third-party development and research harness for eight Retail LIVE-tested UI-control modules plus one focused Async item-callback diagnostic retained from the completed investigation. They can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
 
 This is a test harness, not production addon infrastructure. Patterns demonstrated by a module should not be copied into a production addon without considering its corresponding research conclusions, combat behavior, taint risks, ownership model, and product requirements.
 
 ## Architecture
 
-The root addon contains one TOC, a deliberately small `Core.lua`, and `Launcher.lua`. Each directory under `Modules/` retains its own Lua implementation, README, and any user-authored LIVE screenshot.
+The root addon contains one TOC, a deliberately small `Core.lua`, `Launcher.lua`, and an Async diagnostic bootstrap that installs the passive observers before Core. Each directory under `Modules/` retains its own Lua implementation, README, and any user-authored LIVE screenshot.
 
 Each module eagerly creates and owns its existing root sample frame and local research state, then registers metadata containing an ID, display name, and frame with `RetailUIResearch:RegisterSample`. Eager creation minimizes changes to the previously LIVE-validated initialization and callback paths. Core coordinates visibility only: opening a sample hides the previously selected sample, and reopening a hidden sample shows its existing frame and state.
 
@@ -27,6 +27,7 @@ The consolidated harness was tested by the user on Retail LIVE `12.1.0.69497`.
 
 The launcher opens after `PLAYER_LOGIN`, remains available while a sample is open, and uses a compact vertical stack of ordinary `UIPanelButtonTemplate` buttons. Its height derives from the number of launcher entries, so later modules extend the same column without redesigning the window:
 
+- Async Item Callbacks
 - Sliders
 - Buttons & Frames
 - Dropdowns & Menus
@@ -46,6 +47,7 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `/scrollboxcomparison` or `/sbc`
 - `/colorpickercomparison` or `/cpc`
 - `/dialogsandpopupscomparison` or `/dapc`
+- `/asyncitemcallbacks` or `/aicd`
 
 ## Modules and evidence ownership
 
@@ -57,8 +59,11 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `Modules/ScrollBoxComparison/`
 - `Modules/ColorPickerComparison/`
 - `Modules/DialogsAndPopupsComparison/`
+- `Modules/AsyncItemCallbacksDiagnostic/`
 
 Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. The modules retain their user-authored LIVE visual references beside their Lua and README; `ColorPickerComparison` retains two screenshots and `DialogsAndPopupsComparison.png` is the Dialogs / Popups default-window reference. `ColorPickerComparison` records a qualified combat result and an unresolved gameplay-input observation. `ScrollBoxComparison` completed its supplied fixed-list, variable-extent, grid, one-child ScrollFrame, resize/scale, diagnostic-copy, and narrow non-secure combat tests. `DialogsAndPopupsComparison` verified that an uncovered StaticPopup blocked the tested normal action keybind while direct mouse activation of the same usable action worked, that `fullScreenCover` separately blocked background interaction, that sample-owned and UIParent-owned scaling remained distinct, and that harmless A/B/C/D-no-cover operations worked in the supplied narrow combat pass. Keyboard, gamepad, narration, and accessibility behavior was not exhaustively validated.
+
+`AsyncItemCallbacksDiagnostic` is not a UI-control comparison or a production fix. Its first version remained compatible with reproduction of the original failure; V2 captured an unidentified sole pre-fire callback, and V3 now snapshots pre-hook callback state and installs bounded passive observers from the first addon file for the equipped-weapon fresh-client-launch investigation. Its module README defines the evidence, screenshot, and safety limits.
 
 Detailed source-backed research documents remain under `12.1.0/Analysis/`.
 

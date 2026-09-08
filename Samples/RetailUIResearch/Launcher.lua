@@ -44,6 +44,7 @@ subtitle:SetWidth(LAUNCHER_WIDTH - 32);
 subtitle:SetJustifyH("CENTER");
 
 local sampleButtons = {
+	{id = "async-item-callbacks", label = "Async Item Callbacks"},
 	{id = "sliders", label = "Sliders"},
 	{id = "buttons-frames", label = "Buttons & Frames"},
 	{id = "dropdowns-menus", label = "Dropdowns & Menus"},

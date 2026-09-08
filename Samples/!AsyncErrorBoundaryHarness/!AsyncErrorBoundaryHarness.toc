@@ -1,0 +1,5 @@
+## Interface: 120100
+## Title: Async Error Boundary Harness
+## Notes: Controlled synthetic xpcall and active-error-handler boundary baseline
+
+Harness.lua

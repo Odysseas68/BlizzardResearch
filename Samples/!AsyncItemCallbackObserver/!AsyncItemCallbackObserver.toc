@@ -1,0 +1,6 @@
+## Interface: 120100
+## Title: Async Item Callback Observer
+## Notes: Passive early-load ItemEventListener registration observer
+## Dependencies: Blizzard_ObjectAPI
+
+Observer.lua
