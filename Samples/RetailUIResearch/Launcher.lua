@@ -53,6 +53,7 @@ local sampleButtons = {
 	{id = "scrollbox", label = "ScrollBox"},
 	{id = "color-picker", label = "Color Picker"},
 	{id = "dialogs-popups", label = "Dialogs / Popups"},
+	{id = "tooltips", label = "Tooltips"},
 };
 
 local launcherHeight = BUTTON_TOP

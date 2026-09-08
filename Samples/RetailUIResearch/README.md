@@ -1,6 +1,6 @@
 # RetailUIResearch
 
-`RetailUIResearch` is an unofficial third-party development and research harness for eight Retail LIVE-tested UI-control modules plus one focused Async item-callback diagnostic retained from the completed investigation. They can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
+`RetailUIResearch` is an unofficial third-party development and research harness for nine Retail LIVE-tested UI-control modules and one focused Async item-callback diagnostic retained from the completed investigation. They can be installed and opened from one small launcher without duplicating addon metadata or auto-opening every research window.
 
 This is a test harness, not production addon infrastructure. Patterns demonstrated by a module should not be copied into a production addon without considering its corresponding research conclusions, combat behavior, taint risks, ownership model, and product requirements.
 
@@ -18,6 +18,7 @@ The consolidated harness was tested by the user on Retail LIVE `12.1.0.69497`.
 
 - On login/reload, only the launcher opened; no module window auto-opened.
 - All six modules present at consolidation opened from their launcher buttons. EditBoxComparison and ScrollBoxComparison completed their supplied LIVE runtime tests out of combat and during actual combat. ColorPickerComparison was added afterward and completed its native lifecycle, singleton, scale/layering, and qualified actual-combat runtime pass. DialogsAndPopupsComparison subsequently completed its callback-order, keyboard-versus-mouse, cover, scale, and narrow actual-combat runtime pass.
+- TooltipComparison subsequently completed its primary clean-control pass on Retail LIVE `12.1.0.69587`: P1-P5 passed at 100% out of combat, remained consistent across the tested 75%, 100%, and 125% out-of-combat root scales, and passed in the supplied 100% combat run. I1 item ID `124640` and S1 spell ID `51505` also completed out of combat and in combat. A later combat run changed root scale while combat remained active and exercised a qualified, non-Cartesian subset across 75%, 100%, and 125%. The module README owns the exact coverage and limits.
 - Selecting another module hid the previously selected module.
 - Closing a module left the launcher usable, and clicking its launcher button reopened it.
 - Retained module slash commands opened/toggled the correct module through Core and participated in the one-sample-at-a-time behavior.
@@ -36,6 +37,7 @@ The launcher opens after `PLAYER_LOGIN`, remains available while a sample is ope
 - ScrollBox
 - Color Picker
 - Dialogs / Popups
+- Tooltips
 
 Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug commands remain available and route through the same visibility coordinator:
 
@@ -47,6 +49,7 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `/scrollboxcomparison` or `/sbc`
 - `/colorpickercomparison` or `/cpc`
 - `/dialogsandpopupscomparison` or `/dapc`
+- `/tooltipcomparison` or `/ttc`
 - `/asyncitemcallbacks` or `/aicd`
 
 ## Modules and evidence ownership
@@ -59,9 +62,10 @@ Use `/retailuiresearch` to toggle the launcher. The existing compatibility/debug
 - `Modules/ScrollBoxComparison/`
 - `Modules/ColorPickerComparison/`
 - `Modules/DialogsAndPopupsComparison/`
+- `Modules/TooltipComparison/`
 - `Modules/AsyncItemCallbacksDiagnostic/`
 
-Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. The modules retain their user-authored LIVE visual references beside their Lua and README; `ColorPickerComparison` retains two screenshots and `DialogsAndPopupsComparison.png` is the Dialogs / Popups default-window reference. `ColorPickerComparison` records a qualified combat result and an unresolved gameplay-input observation. `ScrollBoxComparison` completed its supplied fixed-list, variable-extent, grid, one-child ScrollFrame, resize/scale, diagnostic-copy, and narrow non-secure combat tests. `DialogsAndPopupsComparison` verified that an uncovered StaticPopup blocked the tested normal action keybind while direct mouse activation of the same usable action worked, that `fullScreenCover` separately blocked background interaction, that sample-owned and UIParent-owned scaling remained distinct, and that harmless A/B/C/D-no-cover operations worked in the supplied narrow combat pass. Keyboard, gamepad, narration, and accessibility behavior was not exhaustively validated.
+Every module README remains authoritative for that sample's purpose, source baseline, runtime findings, limitations, and test procedure. The completed modules retain their user-authored LIVE visual references beside their Lua and README; `ColorPickerComparison` retains two screenshots and `DialogsAndPopupsComparison.png` is the Dialogs / Popups default-window reference. `TooltipComparison` has completed its phase-1 implementation, primary LIVE clean-control runtime pass, representative P1-P5/I1/S1 screenshot capture, and final static validation. Phase 2 remains deferred and not implemented, OBB integration is not authorized, and the overall Tooltips research roadmap is not complete. `ColorPickerComparison` records a qualified combat result and an unresolved gameplay-input observation. `ScrollBoxComparison` completed its supplied fixed-list, variable-extent, grid, one-child ScrollFrame, resize/scale, diagnostic-copy, and narrow non-secure combat tests. `DialogsAndPopupsComparison` verified that an uncovered StaticPopup blocked the tested normal action keybind while direct mouse activation of the same usable action worked, that `fullScreenCover` separately blocked background interaction, that sample-owned and UIParent-owned scaling remained distinct, and that harmless A/B/C/D-no-cover operations worked in the supplied narrow combat pass. Keyboard, gamepad, narration, and accessibility behavior was not exhaustively validated.
 
 `AsyncItemCallbacksDiagnostic` is not a UI-control comparison or a production fix. Its first version remained compatible with reproduction of the original failure; V2 captured an unidentified sole pre-fire callback, and V3 now snapshots pre-hook callback state and installs bounded passive observers from the first addon file for the equipped-weapon fresh-client-launch investigation. Its module README defines the evidence, screenshot, and safety limits.
 
