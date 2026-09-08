@@ -21,6 +21,11 @@ local activeOwner;
 local activeContentMode;
 local activeDataBackedTest = false;
 
+local phase2Tooltip;
+local activePhase2TestID;
+local activePhase2Trigger;
+local activePhase2Owner;
+
 local function RefreshLog()
 	if not logDisplay then
 		return;
@@ -173,6 +178,70 @@ local function BindPlacementTrigger(button, onEnter)
 	end);
 end
 
+local function ReleasePhase2Tooltip(reason, announce)
+	if not activePhase2TestID then
+		return;
+	end
+
+	local testID = activePhase2TestID;
+	local ownerMatches = activePhase2Owner and phase2Tooltip:IsOwned(activePhase2Owner);
+	if ownerMatches then
+		phase2Tooltip:Hide();
+		phase2Tooltip:ClearLines();
+		phase2Tooltip:ClearAllPoints();
+	end
+
+	Record(testID, string.format(
+		"cleanup reason=%s ownerMatched=%s shownAfter=%s",
+		reason,
+		tostring(ownerMatches),
+		tostring(phase2Tooltip:IsShown())
+	), announce);
+
+	activePhase2TestID = nil;
+	activePhase2Trigger = nil;
+	activePhase2Owner = nil;
+end
+
+local function PreparePhase2Test(testID, trigger, owner, ownerLabel, topology)
+	ReleasePhase2Tooltip("replaced by another Phase 2A test", false);
+	activePhase2TestID = testID;
+	activePhase2Trigger = trigger;
+	activePhase2Owner = owner;
+	Record(testID, string.format(
+		"requested combat=%s owner=%s topology=%s trigger=synthetic restricted-layout tooltip=TooltipComparisonPhase2Tooltip",
+		CombatLabel(),
+		ownerLabel,
+		topology
+	), true);
+end
+
+local function CompletePhase2Test(testID)
+	Record(testID, string.format(
+		"call sequence completed setterResult=n/a shown=%s",
+		tostring(phase2Tooltip:IsShown())
+	), true);
+end
+
+local function AddPhase2ManualContent(testID, title, ownerText, anchorText)
+	phase2Tooltip:SetText(title, 1, 0.82, 0, 1, true);
+	phase2Tooltip:AddLine("Dedicated addon-created tooltip; Phase 2A runtime result pending.", 1, 1, 1, true);
+	phase2Tooltip:AddDoubleLine("Requested owner", ownerText, 0.75, 0.75, 0.75, 1, 1, 1);
+	phase2Tooltip:AddDoubleLine("Requested anchor", anchorText, 0.75, 0.75, 0.75, 1, 1, 1);
+	phase2Tooltip:AddLine("No geometry is read and no matched aspect is added.", 0.55, 0.82, 1, true);
+	phase2Tooltip:Show();
+	CompletePhase2Test(testID);
+end
+
+local function BindPhase2Trigger(trigger, onEnter)
+	trigger:SetScript("OnEnter", onEnter);
+	trigger:SetScript("OnLeave", function(self)
+		if activePhase2Trigger == self then
+			ReleasePhase2Tooltip("trigger OnLeave", false);
+		end
+	end);
+end
+
 local comparisonFrame = CreateFrame("Frame", "TooltipComparisonFrame", UIParent);
 comparisonFrame:Hide();
 comparisonFrame:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -184,7 +253,7 @@ comparisonFrame:EnableMouse(true);
 
 CreateFrame("Frame", nil, comparisonFrame, "DialogBorderDarkTemplate");
 local header = CreateFrame("Frame", nil, comparisonFrame, "DialogHeaderTemplate");
-header:Setup("Tooltip Comparison — Phase 1");
+header:Setup("Tooltip Comparison — Phase 1 / Phase 2A");
 header:EnableMouse(true);
 header:RegisterForDrag("LeftButton");
 header:SetScript("OnDragStart", function()
@@ -202,9 +271,17 @@ CreateFrame("Button", nil, comparisonFrame, "UIPanelCloseButtonDefaultAnchors");
 local subtitle = CreateText(
 	comparisonFrame,
 	"GameFontHighlightSmall",
-	"Clean ordinary-addon controls. Hover each trigger; visual placement is intentionally manual evidence."
+	"Phase 1 clean controls and Phase 2A synthetic restricted-layout tests. Visual evidence remains manual."
 );
 subtitle:SetPoint("TOPLEFT", 24, -48);
+
+phase2Tooltip = CreateFrame(
+	"GameTooltip",
+	"TooltipComparisonPhase2Tooltip",
+	UIParent,
+	"SharedTooltipTemplate"
+);
+phase2Tooltip:Hide();
 
 local combatText = CreateText(comparisonFrame, "GameFontHighlightSmall", "");
 combatText:SetPoint("TOPRIGHT", -24, -48);
@@ -221,6 +298,7 @@ for index, scaleChoice in ipairs({
 	button:SetPoint("LEFT", scaleLabel, "RIGHT", 7 + ((index - 1) * 54), 0);
 	button:SetScript("OnClick", function()
 		ReleaseControlledTooltip("root scale changed", false);
+		ReleasePhase2Tooltip("root scale changed", false);
 		comparisonFrame:SetScale(scaleChoice.value);
 		comparisonFrame:ClearAllPoints();
 		comparisonFrame:SetPoint("CENTER");
@@ -228,13 +306,51 @@ for index, scaleChoice in ipairs({
 	end);
 end
 
+local phase1Button = CreateActionButton(comparisonFrame, "Phase 1", 100);
+phase1Button:SetPoint("TOPLEFT", 24, -76);
+
+local phase2Button = CreateActionButton(comparisonFrame, "Phase 2", 100);
+phase2Button:SetPoint("LEFT", phase1Button, "RIGHT", 8, 0);
+
+local phase1Page = CreateFrame("Frame", nil, comparisonFrame);
+phase1Page:SetPoint("TOPLEFT", 24, -108);
+phase1Page:SetPoint("TOPRIGHT", -24, -108);
+phase1Page:SetHeight(388);
+
+local phase2Page = CreateFrame("Frame", nil, comparisonFrame);
+phase2Page:SetAllPoints(phase1Page);
+phase2Page:Hide();
+
+local function ShowPhasePage(page)
+	if page == phase1Page then
+		ReleasePhase2Tooltip("Phase 2A page hidden", false);
+		phase2Page:Hide();
+		phase1Page:Show();
+		phase1Button:Disable();
+		phase2Button:Enable();
+	else
+		phase1Page:Hide();
+		phase2Page:Show();
+		phase1Button:Enable();
+		phase2Button:Disable();
+	end
+end
+
+phase1Button:SetScript("OnClick", function()
+	ShowPhasePage(phase1Page);
+end);
+phase2Button:SetScript("OnClick", function()
+	ShowPhasePage(phase2Page);
+end);
+ShowPhasePage(phase1Page);
+
 local placementPanel = CreatePanel(
-	comparisonFrame,
+	phase1Page,
 	"Placement controls",
 	"Five owner/anchor compositions. Hover buttons; no screen-coordinate getters are used."
 );
-placementPanel:SetPoint("TOPLEFT", 24, -76);
-placementPanel:SetSize(PANEL_WIDTH, 420);
+placementPanel:SetPoint("TOPLEFT");
+placementPanel:SetSize(PANEL_WIDTH, 388);
 
 local placementCases = {
 	{
@@ -312,12 +428,12 @@ BindPlacementTrigger(placementButtons[5], function(self)
 end);
 
 local contentPanel = CreatePanel(
-	comparisonFrame,
+	phase1Page,
 	"Data-backed content controls",
 	"Enter a positive numeric ID, then hover Show. Both tests use UIParent + ANCHOR_CURSOR."
 );
-contentPanel:SetPoint("TOPRIGHT", -24, -76);
-contentPanel:SetSize(PANEL_WIDTH, 420);
+contentPanel:SetPoint("TOPRIGHT");
+contentPanel:SetSize(PANEL_WIDTH, 388);
 
 local function CreateIDTest(parent, y, testID, title, setterName)
 	local titleText = CreateText(parent, "GameFontNormal", title);
@@ -401,6 +517,78 @@ manualNotes:SetWidth(526);
 manualNotes:SetJustifyH("LEFT");
 manualNotes:SetWordWrap(true);
 
+local phase2Panel = CreatePanel(
+	phase2Page,
+	"Phase 2A — synthetic restricted-layout trigger",
+	"Three isolated addon-created test frames. Runtime outcomes remain pending until LIVE validation."
+);
+phase2Panel:SetAllPoints();
+
+local function CreateRestrictedTrigger(parent, labelText, y)
+	local background = parent:CreateTexture(nil, "ARTWORK");
+	background:SetPoint("TOPLEFT", 18, y);
+	background:SetSize(310, 42);
+	background:SetColorTexture(0.12, 0.12, 0.16, 1);
+
+	local label = CreateText(parent, "GameFontHighlightSmall", labelText);
+	label:SetPoint("TOPLEFT", 32, y - 14);
+
+	local trigger = CreateFrame("Frame", nil, parent, "DisableUntrustedLayoutScriptsTemplate");
+	trigger:SetPoint("TOPLEFT", 18, y);
+	trigger:SetSize(310, 42);
+	trigger:EnableMouse(true);
+	return trigger;
+end
+
+local restrictedTrigger1 = CreateRestrictedTrigger(phase2Panel, "R1. Restricted owner + ANCHOR_LEFT", -72);
+local restrictedTrigger2 = CreateRestrictedTrigger(phase2Panel, "R2. Restricted owner + direct SetPoint", -150);
+local restrictedTrigger3 = CreateRestrictedTrigger(phase2Panel, "R3. UIParent owner + restricted SetPoint", -228);
+
+local phase2Descriptions = {
+	"Owner is the restricted trigger; automatic ANCHOR_LEFT placement.",
+	"Owner is the restricted trigger; ANCHOR_NONE, then tooltip RIGHT to trigger LEFT.",
+	"Owner is UIParent; ANCHOR_NONE, then tooltip RIGHT to restricted trigger LEFT.",
+};
+for index, description in ipairs(phase2Descriptions) do
+	local detail = CreateText(phase2Panel, "GameFontDisableSmall", description);
+	detail:SetPoint("TOPLEFT", 350, -82 - ((index - 1) * 78));
+	detail:SetWidth(740);
+	detail:SetJustifyH("LEFT");
+end
+
+BindPhase2Trigger(restrictedTrigger1, function(self)
+	PreparePhase2Test("R1", self, self, "synthetic restricted trigger", "ANCHOR_LEFT");
+	phase2Tooltip:SetOwner(self, "ANCHOR_LEFT");
+	AddPhase2ManualContent("R1", "Restricted owner + ANCHOR_LEFT", "restricted trigger", "ANCHOR_LEFT");
+end);
+
+BindPhase2Trigger(restrictedTrigger2, function(self)
+	PreparePhase2Test("R2", self, self, "synthetic restricted trigger", "ANCHOR_NONE + SetPoint");
+	phase2Tooltip:SetOwner(self, "ANCHOR_NONE");
+	phase2Tooltip:ClearAllPoints();
+	phase2Tooltip:SetPoint("RIGHT", self, "LEFT", -8, 0);
+	AddPhase2ManualContent("R2", "Restricted owner + direct SetPoint", "restricted trigger", "RIGHT -> trigger LEFT");
+end);
+
+BindPhase2Trigger(restrictedTrigger3, function(self)
+	PreparePhase2Test("R3", self, UIParent, "UIParent", "ANCHOR_NONE + SetPoint to restricted trigger");
+	phase2Tooltip:SetOwner(UIParent, "ANCHOR_NONE");
+	phase2Tooltip:ClearAllPoints();
+	phase2Tooltip:SetPoint("RIGHT", self, "LEFT", -8, 0);
+	AddPhase2ManualContent("R3", "UIParent owner + restricted SetPoint", "UIParent", "RIGHT -> restricted trigger LEFT");
+end);
+
+local phase2Notes = CreateText(
+	phase2Panel,
+	"GameFontDisableSmall",
+	"Phase 2A does not add a matching forbidden aspect to the dedicated tooltip. "
+		.. "Phase 2B, native AuraButton topology, and any production integration remain deferred."
+);
+phase2Notes:SetPoint("BOTTOMLEFT", 18, 18);
+phase2Notes:SetPoint("RIGHT", -18, 0);
+phase2Notes:SetJustifyH("LEFT");
+phase2Notes:SetWordWrap(true);
+
 local diagnosticPanel = CreatePanel(
 	comparisonFrame,
 	"Bounded tooltip diagnostics",
@@ -449,8 +637,8 @@ end);
 local footer = CreateText(
 	comparisonFrame,
 	"GameFontDisableSmall",
-	"Retail 12.1.0.69587 / 8ea15b61e. Phase-1 clean-control validation complete; "
-		.. "no SavedVariables, polling, or restricted-layout probes."
+	"Retail 12.1.0.69587 / 8ea15b61e. Phase 1 complete; Phase 2A runtime pending; "
+		.. "no SavedVariables or polling."
 );
 footer:SetPoint("BOTTOMLEFT", 24, 12);
 
@@ -488,11 +676,12 @@ end);
 UpdateCombatState(InCombatLockdown());
 
 comparisonFrame:SetScript("OnShow", function()
-	Record("GLOBAL", "sample opened; phase-1 clean-control baseline documented", true);
+	Record("GLOBAL", "sample opened; Phase 1 complete and Phase 2A runtime pending", true);
 end);
 
 comparisonFrame:SetScript("OnHide", function()
 	ReleaseControlledTooltip("sample closed", false);
+	ReleasePhase2Tooltip("sample closed", false);
 	Record("GLOBAL", "sample closed; controlled tooltip cleanup requested", false);
 end);
 
@@ -510,4 +699,4 @@ SlashCmdList.TOOLTIPCOMPARISON = function()
 	RetailUIResearch:ToggleSample("tooltips");
 end;
 
-Record("GLOBAL", "phase-1 module loaded; use /tooltipcomparison or /ttc", false);
+Record("GLOBAL", "Phase 1 / Phase 2A module loaded; use /tooltipcomparison or /ttc", false);

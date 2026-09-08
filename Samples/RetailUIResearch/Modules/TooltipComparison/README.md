@@ -1,10 +1,10 @@
-# Tooltip Comparison — Phase 1
+# Tooltip Comparison — Phase 1 and Phase 2A
 
 ## Purpose and validation status
 
-`TooltipComparison` is the first controlled Tooltips module in the `RetailUIResearch` harness. It establishes a clean control group for ownership, anchoring, positioning, manual content, data-backed content, and combat observation using ordinary addon-created frames.
+`TooltipComparison` is the controlled Tooltips module in the `RetailUIResearch` harness. Its frozen Phase-1 surface establishes a clean control group for ownership, anchoring, positioning, manual content, data-backed content, and combat observation using ordinary addon-created frames. Phase 2A adds a separate synthetic restricted-layout experiment without changing those Phase-1 test sequences.
 
-This is not a tooltip library, a production recommendation, or a restricted-layout reproduction. Static validation and the primary Retail LIVE phase-1 clean-control pass are complete. Selected Phase-1 runtime screenshots are preserved under `Media/Phase1/`.
+This is not a tooltip library or a production recommendation. Static validation and the primary Retail LIVE Phase-1 clean-control pass are complete. Selected Phase-1 runtime screenshots are preserved under `Media/Phase1/`. Phase 2A has also completed its first LIVE runtime pass; no Phase-2 screenshot is part of that evidence set.
 
 ## Source baseline
 
@@ -114,13 +114,13 @@ The module deliberately does not call `GetLeft`, `GetRight`, `GetTop`, `GetBotto
 
 Direct native anchor calls avoid exposing screen coordinates to sample Lua. They are not automatically universal: `SetPoint` can still be rejected when a dependency would inherit incompatible forbidden layout aspects.
 
-## Why restricted layout is deferred
+## Phase-1 restricted-layout boundary
 
 Phase 1 adds no forbidden aspects, no `DisableUntrustedLayoutScriptsTemplate`, no deliberately tainted object, and no synthetic or native restricted trigger.
 
 Blizzard's intrinsic AuraButton is not equivalent to this sample. The native button carries forbidden aspects, and its dedicated private tooltip is explicitly given matching inheritable layout aspects before `SetOwner`. A clean addon button cannot establish the behavior of that composition.
 
-A later phase may use separately owned trigger and tooltip objects created specifically for a controlled restricted-layout experiment. It must not mutate the shared global `GameTooltip` or use a production addon as an uncontrolled test surface.
+Phase 2A now uses separately created trigger and tooltip objects for a controlled synthetic experiment. It does not mutate the shared global `GameTooltip` or use a production addon as a test surface.
 
 ## OBB motivation and boundary
 
@@ -155,21 +155,65 @@ The newest 50 entries are retained in a numbered, case-labelled `ScrollingEditBo
 
 Each test has its own `OnEnter` handler. The module logs the requested call immediately before invoking the native tooltip sequence and logs completion only after it returns. It intentionally does not wrap the sequence in `pcall`, `xpcall`, or a global error handler: such a wrapper could alter the taint/error context being researched and could suppress the normal Blizzard/BugGrabber evidence. A failure therefore interrupts only that trigger's handler; other triggers remain independently callable after the normal error path returns control.
 
-On trigger `OnLeave`, replacement by another sample test, scale change, or sample close, the module hides and clears the tooltip only when `GameTooltip:IsOwned` still matches the owner requested by the active sample test. It then clears active sample bookkeeping. The module never installs `GameTooltip.UpdateTooltip`, so it has no refresh callback to remove and does not clear another owner's callback.
+On trigger `OnLeave`, replacement by another sample test, scale change, or sample close, each phase cleans only its own active tooltip when `IsOwned` still matches the owner requested by that phase's active test. Leaving the Phase-2 page additionally cleans only its dedicated tooltip; page switching does not modify Phase-1 `GameTooltip` state. Phase 1 continues to use `GameTooltip`; Phase 2A uses only `TooltipComparisonPhase2Tooltip`. The module never installs `GameTooltip.UpdateTooltip`, so it has no refresh callback to remove and does not clear another owner's callback.
 
-## Phase-2 questions
+## Phase 2A synthetic restricted-layout experiment — LIVE runtime tested
+
+The narrow question is whether adding `UntrustedLayoutScriptExecution` to an otherwise controlled addon-created trigger changes tooltip ownership or anchoring relationships in the same class of way previously observed with the restricted OBB weapon row. This synthetic comparison is not an exact OBB reproduction, and static construction alone supports no runtime conclusion.
+
+### Source-backed construction
+
+The LIVE `Blizzard_SharedXMLBase/ForbiddenAspectTemplates.xml` source exposes `DisableUntrustedLayoutScriptsTemplate` specifically so addon-created frames can opt into `UntrustedLayoutScriptExecution` at creation. Generated `ForbiddenAspectConstantsDocumentation.lua` says that this aspect propagates through layout relationships, and generated `SimpleScriptRegionResizingAPIDocumentation.lua` marks `SetPoint` and `SetAllPoints` as protected operations that check whether forbidden layout aspects may be inherited. `Blizzard_AuraContainer/Blizzard_CustomAuraContainer.lua` independently identifies the same template as the creation-time opt-in used for addon frames that require restricted layout.
+
+The synthetic trigger is therefore created with the exact source-defined frame type/template pair:
+
+```lua
+CreateFrame("Frame", nil, phase2Panel, "DisableUntrustedLayoutScriptsTemplate")
+```
+
+This is a source-supported construction. The implementation of native `GameTooltip:SetOwner` is not Lua-visible; the exact rejection points below are verified runtime results for the tested compositions, not claims about its internal implementation.
+
+Phase 2A creates one separate addon-owned tooltip for its three cases:
+
+```lua
+CreateFrame("GameTooltip", "TooltipComparisonPhase2Tooltip", UIParent, "SharedTooltipTemplate")
+```
+
+`Blizzard_SharedXML/SharedTooltipTemplates.xml` defines `SharedTooltipTemplate`; it is the smallest audited shared template that supplies the ordinary tooltip art, text regions, and shared tooltip scripts required by these manual-content tests. Phase 2A deliberately does not copy the native AuraButton path that adds matching inheritable layout aspects to its dedicated tooltip; that matched-aspect comparison is Phase 2B and is not implemented.
+
+The sample uses two ordinary `UIPanelButtonTemplate` page selectors labelled Phase 1 and Phase 2. They only show or hide already-created addon frames and, when leaving Phase 2, clean its active dedicated tooltip. They are navigation controls, not evidence about Blizzard's native tab systems. Phase 1 is the initial page, switching pages does not run a test, and page switching does not modify `GameTooltip` state.
+
+### R1-R3 topologies and LIVE results
+
+Each case has its own restricted trigger. All content is manual, all requested topology is logged before the native sequence, completion is logged only if the entire sequence returns, and no `pcall`, `xpcall`, geometry getter, polling, callback hook, or global `GameTooltip` aspect mutation is used.
+
+- **R1 — restricted owner plus automatic anchor:** `TooltipComparisonPhase2Tooltip:SetOwner(restrictedTrigger, "ANCHOR_LEFT")` was rejected at `SetOwner` with `Anchoring disallowed as dependent object would inherit forbidden aspects: UntrustedLayoutScriptExecution`. Cleanup recorded `ownerMatched=false` and `shownAfter=false`. Automatic `ANCHOR_LEFT` did not bypass the restricted-layout dependency in this synthetic composition.
+- **R2 — restricted owner plus explicit dependency:** `SetOwner(restrictedTrigger, "ANCHOR_NONE")` was rejected with the same error before `ClearAllPoints()` or `SetPoint("RIGHT", restrictedTrigger, "LEFT", -8, 0)` could run. Cleanup recorded `ownerMatched=false` and `shownAfter=false`.
+- **R3 — independent owner plus restricted dependency:** `SetOwner(UIParent, "ANCHOR_NONE")` completed sufficiently for cleanup to record `ownerMatched=true`; the subsequent `SetPoint("RIGHT", restrictedTrigger, "LEFT", -8, 0)` was rejected with the same forbidden-aspect error. Cleanup recorded `shownAfter=false`.
+
+The pass used Retail LIVE `12.1.0.69587`, 100% TooltipComparison root scale, an out-of-combat state, the dedicated Phase-2 tooltip, and the synthetic restricted triggers. No Phase-2 tooltip became visibly shown. Phase 2A has not been tested in combat or at 75% or 125% scale.
+
+### Control comparison and safe conclusion
+
+The Phase-1 controls provide the direct clean comparison: P1 succeeded with ordinary-trigger ownership plus `ANCHOR_LEFT`, while R1 failed at `SetOwner`; P2 succeeded with ordinary-trigger ownership plus `ANCHOR_NONE` and direct `SetPoint`, while R2 failed at `SetOwner` before its point calls; P4 succeeded with `UIParent` ownership and a point relative to an ordinary trigger, while R3 established `UIParent` ownership but failed at `SetPoint` relative to the synthetic restricted trigger.
+
+**Verified runtime conclusion:** Under the tested LIVE Retail synthetic composition, adding the source-supported `UntrustedLayoutScriptExecution` restricted-layout condition to the trigger changed tooltip ownership and anchoring behavior relative to the Phase-1 ordinary controls. R1 and R2 were rejected by `SetOwner`, while R3 established `UIParent` ownership but was rejected when `SetPoint` created a layout dependency on the restricted trigger. All three errors explicitly named `UntrustedLayoutScriptExecution`.
+
+The R2 failure reproduces the same class of `SetOwner` rejection previously observed with the OBB restricted weapon row. Together with the successful ordinary Phase-1 controls, this strengthens the evidence that the OBB failure is associated with restricted-layout aspect compatibility rather than ordinary tooltip ownership alone.
+
+Important limits remain: the synthetic trigger is not proven identical to the OBB row; the exact OBB forbidden-aspect set, propagation chain, and taint provenance are not proven; the native `SetOwner` implementation remains opaque; and these results are not universal statements about all restricted frames. `ANCHOR_LEFT` was not tested on the real OBB row, Phase 2A establishes no production-safe row-relative alternative, and the existing OBB `UIParent` plus `ANCHOR_CURSOR` fallback remains unchanged. No Phase-2 screenshot is linked because none was supplied.
+
+## Deferred Phase-2 questions
 
 Deferred questions include:
 
-- a dedicated trigger created with `DisableUntrustedLayoutScriptsTemplate`;
-- normal versus creation-time opted-in dedicated tooltip behavior;
-- whether `UIParent` ownership plus a point relative to a restricted trigger is rejected at `SetPoint`;
+- a creation-time opted-in dedicated tooltip carrying a matched forbidden aspect (Phase 2B);
 - real intrinsic AuraButton comparison without modifying Blizzard frames;
 - aura-instance tooltip content;
 - controlled cold-cache tooltip-data observation and separate callback attribution;
 - the relationship between combat, taint, anchor ancestry, and contextual geometry secrecy.
 
-None of these is implemented in phase 1. Tabs and the broader deprecated/compatibility API audit also remain future work.
+None of these deferred questions is implemented by Phase 2A. Native tabs and the broader deprecated/compatibility API audit also remain future work.
 
 ## Revalidation checklist
 
@@ -220,7 +264,10 @@ These selected Retail LIVE captures provide visual evidence for the recorded run
 - Phase 1 primary LIVE clean-control runtime testing: complete.
 - Phase 1 representative screenshot capture: complete.
 - Phase 1 static validation: complete.
-- Phase 2 restricted-layout experiments: deferred and not implemented.
+- Phase 2A synthetic restricted-layout implementation: complete.
+- Phase 2A R1-R3 LIVE runtime testing at 100% scale out of combat: complete.
+- Phase 2A screenshots: not supplied.
+- Phase 2B matched-aspect dedicated-tooltip comparison: deferred and not implemented.
 - OBB integration or modification: not authorized.
 - Tooltips research overall: not complete.
 - Tabs: future work.
@@ -232,4 +279,6 @@ These selected Retail LIVE captures provide visual evidence for the recorded run
 - Registered as `tooltips` through `RetailUIResearch:RegisterSample`
 - Initially hidden; Core owns open/toggle coordination
 - No independent `PLAYER_LOGIN` or auto-open
-- No SavedVariables, persistence, polling, secure actions, restricted aspects, production-addon dependency, or OBB integration
+- No SavedVariables, persistence, polling, secure actions, production-addon dependency, or OBB integration
+- `UntrustedLayoutScriptExecution` is introduced only through the source-defined creation template on the three isolated Phase-2A triggers
+- The dedicated Phase-2A tooltip receives no matching forbidden aspect; shared `GameTooltip` remains the unchanged Phase-1 surface
