@@ -4,7 +4,7 @@
 
 `TooltipComparison` is the controlled Tooltips module in the `RetailUIResearch` harness. Its frozen Phase-1 surface establishes a clean control group for ownership, anchoring, positioning, manual content, data-backed content, and combat observation using ordinary addon-created frames. Phase 2A is the frozen unmatched restricted-layout comparison; Phase 2B adds a second, creation-time matched tooltip without changing the earlier test sequences.
 
-This is not a tooltip library or a production recommendation. Static validation and the primary Retail LIVE Phase-1 clean-control pass are complete. Selected Phase-1 runtime screenshots are preserved under `Media/Phase1/`. Phase 2A has completed its first LIVE runtime pass. Phase 2B has completed LIVE out-of-combat and combat testing in the tested synthetic scope, and its M1-M3 screenshots are preserved under `Media/Phase2/`.
+This is not a tooltip library or a production recommendation. Static validation and the primary Retail LIVE Phase-1 clean-control pass are complete. Selected Phase-1 runtime screenshots are preserved under `Media/Phase1/`. Phase 2A has completed its LIVE unmatched-tooltip pass. Phase 2B has completed LIVE out-of-combat and combat testing in the tested synthetic scope, and its M1-M3 screenshots are preserved under `Media/Phase2/`. The subsequent gap audit found no justified Phase 2C, so the TooltipComparison experimental sequence is closed with the bounded limitations below.
 
 ## Source baseline
 
@@ -259,19 +259,58 @@ In a subsequent genuine-combat pass, each M test recorded `combat=YES`; every ap
 
 During LIVE combat testing, M1, M2, and M3 completed successfully with no Lua or forbidden-layout errors. TooltipComparison root scaling was also changed among 75%, 100%, and 125% while combat remained active without error. Exact per-test coverage differed by scale and was not treated as a complete Cartesian matrix.
 
-### P/R/M comparison and safe conclusion
+### Final P/R/M evidence table
 
-- **P1 / R1 / M1:** The ordinary P1 control passed with owner plus `ANCHOR_LEFT`; unmatched R1 failed at `SetOwner`; creation-time matched M1 passed.
-- **P2 / R2 / M2:** The ordinary P2 control passed with owner plus `ANCHOR_NONE` and direct `SetPoint`; unmatched R2 failed at `SetOwner` before `ClearAllPoints` or `SetPoint`; creation-time matched M2 completed all operations and passed.
-- **P4 / R3 / M3:** The ordinary P4 control passed with `UIParent` ownership and ordinary-trigger-relative `SetPoint`; unmatched R3 established `UIParent` ownership but failed at restricted-trigger-relative `SetPoint`; creation-time matched M3 completed the corresponding restricted-relative topology and passed.
+| Topology | Ordinary P | Restricted unmatched R | Restricted matched M |
+| --- | --- | --- | --- |
+| Owner + `ANCHOR_LEFT` | Pass | `SetOwner` rejection | Pass |
+| Owner + `ANCHOR_NONE` + direct point | Pass | `SetOwner` rejection | Pass |
+| `UIParent` owner + trigger-relative point | Pass | `SetPoint` rejection | Pass |
+
+The ordinary P controls establish that the requested ownership and positioning patterns work in the clean composition. The R controls add the source-supported restricted-layout condition to the trigger while leaving the dedicated tooltip unmatched and are rejected. The corresponding M controls retain the restricted trigger and topology but give the dedicated tooltip the same known condition at creation and pass. This controlled progression provides strong evidence that forbidden-layout compatibility is the material changed variable in this synthetic experiment; it does not extend that result to arbitrary native or addon frames.
 
 **Verified runtime conclusion:** Under the tested LIVE Retail synthetic composition, a dedicated addon-created tooltip carrying `UntrustedLayoutScriptExecution` through source-supported creation-time template composition could establish ownership and anchoring relationships with the synthetic restricted trigger that were rejected when the otherwise comparable Phase-2A tooltip lacked the matching forbidden aspect. The controlled R-versus-M comparison demonstrates that forbidden-layout aspect compatibility changes the outcome in this synthetic experiment: the unmatched R controls remain rejected, while the corresponding creation-time matched M controls complete successfully.
 
 **Source-supported interpretation:** Blizzard's AuraButton path dynamically copies the owner's actual inheritable Layout forbidden aspects to its tooltip before `SetOwner`. Phase 2B does not reproduce that dynamic operation; it statically gives its dedicated tooltip the single `UntrustedLayoutScriptExecution` condition intentionally present on the synthetic trigger. The runtime result supports the general compatibility principle in this controlled composition, but does not prove that the static template technique universally replaces Blizzard's dynamic mechanism.
 
-The result strengthens the restricted-layout compatibility explanation for the OBB observation: Phase 2A R2 reproduced the same class of `SetOwner(row, "ANCHOR_NONE")` rejection, and Phase 2B M2 shows that the corresponding synthetic topology succeeds when its dedicated tooltip carries the matching creation-time condition. It does not prove that the OBB row has only this aspect, or that its aspect set, taint provenance, or propagation behavior matches the synthetic trigger. It does not establish the static matched tooltip, `ANCHOR_LEFT`, or direct row-relative `SetPoint` as safe for OBB. OBB remains unchanged, and its production fallback remains `UIParent` ownership plus `ANCHOR_CURSOR`.
+The result strengthens the restricted-layout compatibility explanation for the OBB observation: Phase 2A R2 reproduced the same class of `SetOwner(row, "ANCHOR_NONE")` rejection, and Phase 2B M2 shows that the corresponding synthetic topology succeeds when its dedicated tooltip carries the matching creation-time condition. It does not prove that the OBB row has only this aspect, or that its aspect set, taint provenance, or propagation behavior matches the synthetic trigger. It does not establish the static matched tooltip, `ANCHOR_LEFT`, or direct row-relative `SetPoint` as safe for OBB.
 
-### Phase-2B screenshots
+## Final findings and research closure
+
+- **VERIFIED SOURCE FACT:** Frame geometry getters can return secret or contextually inaccessible values; `SetPoint` and related layout operations check forbidden-aspect inheritance; `UntrustedLayoutScriptExecution` propagates through documented layout relationships; and Blizzard's native AuraButton path dynamically applies the owner's actual inheritable Layout aspects to its tooltip before `SetOwner`. The mutation call is restricted and is not reproduced by addon Lua here.
+- **VERIFIED RUNTIME RESULT:** Ordinary P ownership/anchoring patterns passed, unmatched restricted R relationships were rejected with errors naming `UntrustedLayoutScriptExecution`, and their creation-time matched M counterparts passed in the tested synthetic composition. The tested P and M samples also show that combat alone is not a sufficient explanation for the historical rejection. Tested scale changes produced no corresponding error, so scale alone is not shown to be causal.
+- **SOURCE-SUPPORTED INFERENCE:** Forbidden-layout compatibility, rather than ordinary tooltip ownership, direct `SetPoint`, `GameTooltip`, combat, or scale in isolation, explains the controlled P/R/M outcome. Native anchor relationships avoid extracting coordinates into addon Lua, but they do not bypass aspect-compatibility checks.
+- **UNKNOWN / BOUNDED LIMITATION:** Native `SetOwner` rejection logic is not Lua-visible; the synthetic condition is not proven equivalent to every real restricted frame; Phase 2B statically matches one known aspect rather than Blizzard's dynamic owner-specific mask; and no universal production rule follows from the successful M cases.
+
+The material general questions targeted by TooltipComparison are answered. Closure does not mean that every private implementation detail, restricted frame, forbidden aspect, tooltip template, or production-addon composition has been proven. It means that the intended ownership/layout questions are resolved, the remaining unknowns are bounded, and another controlled phase would not provide proportionate knowledge.
+
+## Safe engineering guidance
+
+For ordinary addon controls:
+
+- prefer native ownership and anchor relationships over reading geometry and performing coordinate arithmetic in addon Lua;
+- automatic anchors and `ANCHOR_NONE` plus direct `SetPoint` are valid patterns when the dependency is permitted;
+- `UIParent` ownership plus `ANCHOR_CURSOR` provides an independent topology when row-relative ownership or positioning is unnecessary.
+
+For restricted-layout controls:
+
+- do not assume that a topology validated with an ordinary frame remains permitted;
+- do not treat geometry extraction as a bypass for restricted layout;
+- direct `SetPoint` can itself be rejected because the anchor relationship participates in forbidden-aspect propagation;
+- matching one known aspect in a synthetic test is not a universal production recipe;
+- native/private Blizzard code may use restricted operations that addon Lua cannot reproduce.
+
+## OBB-specific bounded limitations
+
+Questions about the real OBB weapon row remain separate from the completed general TooltipComparison sequence. Its complete inheritable Layout aspect set, ancestry and anchor-chain contributions, exact taint provenance, coverage by a statically matched tooltip, real-row `ANCHOR_LEFT` behavior, real-row-relative `SetPoint` behavior, and lifecycle safety of either alternative remain unproven.
+
+These are not unresolved general TooltipComparison questions. OBB remains frozen, and its existing working production fallback remains `UIParent` ownership plus `ANCHOR_CURSOR`. Phase 2B's synthetic success does not justify changing it. If a future production requirement genuinely needs row-relative OBB tooltips, that requires a separately authorized OBB-specific investigation.
+
+## Async and data boundary
+
+TooltipComparison answers ownership and layout-compatibility questions. Phase 1 establishes the tested `SetItemByID` and `SetSpellByID` content paths, while Phase 2 deliberately keeps content manual to isolate layout. It does not establish that `SetInventoryItem` registers the same Async callback path, that tooltip content loading caused an `AsyncCallbackSystem` failure, or that Phase 2B says anything about Async behavior. The AsyncCallbackSystem investigation remains separate.
+
+## Phase-2B screenshots
 
 ![M1 matched tooltip with ANCHOR_LEFT](Media/Phase2/Tooltip_M1.png)
 
@@ -285,16 +324,22 @@ The result strengthens the restricted-layout compatibility explanation for the O
 
 *M3 — the matched tooltip visibly rendered with `UIParent` ownership and a point relative to the synthetic restricted trigger.*
 
-## Deferred Phase-2 questions
+## Bounded remaining unknowns
 
-Deferred questions include:
+- native `SetOwner` rejection logic is not exposed in Lua;
+- arbitrary native forbidden-aspect masks cannot be reproduced through unrestricted addon mutation;
+- behavior across every intrinsic restricted frame and tooltip template is not proven;
+- full private AuraButton and AuraButtonTooltip behavior is not reproduced by the synthetic addon sample;
+- matched-tooltip cold-cache and data-refresh behavior was not tested because it is not necessary to answer the resolved layout question;
+- taint provenance cannot be cleanly isolated here without turning the sample into deliberate taint injection.
 
-- real intrinsic AuraButton comparison without modifying Blizzard frames;
-- aura-instance tooltip content;
-- controlled cold-cache tooltip-data observation and separate callback attribution;
-- the relationship between combat, taint, anchor ancestry, and contextual geometry secrecy.
+These are documented limitations, not planned Phase-2 experiments. A future production requirement may justify a separate focused investigation, but their existence alone does not reopen TooltipComparison.
 
-None of these deferred questions is implemented by Phase 2B. Native tabs and the broader deprecated/compatibility API audit also remain future work.
+## Phase 2C decision and roadmap transition
+
+**Phase 2C is not justified.** No distinct material general tooltip question remains that is both unanswered and cleanly isolatable with supported addon mechanisms. Further combat/scale repetition would add robustness rather than mechanism knowledge; more `ANCHOR_*` modes would largely catalogue ordinary behavior; arbitrary native multi-aspect masks cannot be recreated cleanly; real OBB mask and provenance questions are OBB-specific; full native AuraButton parity is unavailable to addon Lua; matched data-backed content is unnecessary for the resolved layout conclusion; and deliberate taint injection would weaken experimental control.
+
+This no-Phase-2C result closes the TooltipComparison experimental research sequence successfully. The next native UI roadmap topic is Tabs. The Phase 1 / Phase 2 selectors in this sample are ordinary buttons, are not native Tabs research, and provide no evidence about native tab APIs.
 
 ## Revalidation checklist
 
@@ -354,8 +399,8 @@ These selected Retail LIVE captures provide visual evidence for the recorded run
 - Phase 2B in-combat root scale changes among 75%, 100%, and 125%: complete with non-Cartesian per-test coverage.
 - Phase 2B M1-M3 screenshot capture: complete.
 - OBB integration or modification: not authorized.
-- Tooltips research overall: not complete.
-- Tabs: future work.
+- TooltipComparison experimental research: complete; no Phase 2C is justified.
+- Next native UI roadmap topic: Tabs; no Tabs research is included here.
 
 ## Commands and boundaries
 

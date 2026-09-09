@@ -230,7 +230,7 @@ end
 
 local function AddPhase2ManualContent(testID, title, ownerText, anchorText)
 	phase2Tooltip:SetText(title, 1, 0.82, 0, 1, true);
-	phase2Tooltip:AddLine("Dedicated addon-created tooltip; Phase 2A runtime result pending.", 1, 1, 1, true);
+	phase2Tooltip:AddLine("Dedicated unmatched tooltip; Phase 2A rejection behavior is verified.", 1, 1, 1, true);
 	phase2Tooltip:AddDoubleLine("Requested owner", ownerText, 0.75, 0.75, 0.75, 1, 1, 1);
 	phase2Tooltip:AddDoubleLine("Requested anchor", anchorText, 0.75, 0.75, 0.75, 1, 1, 1);
 	phase2Tooltip:AddLine("No geometry is read and no matched aspect is added.", 0.55, 0.82, 1, true);
@@ -304,7 +304,7 @@ local function AddPhase2MatchedManualContent(testID, title, ownerText, anchorTex
 	);
 	phase2MatchedTooltip:AddDoubleLine("Requested owner", ownerText, 0.75, 0.75, 0.75, 1, 1, 1);
 	phase2MatchedTooltip:AddDoubleLine("Requested anchor", anchorText, 0.75, 0.75, 0.75, 1, 1, 1);
-	phase2MatchedTooltip:AddLine("Runtime result pending; no geometry is read.", 0.55, 0.82, 1, true);
+	phase2MatchedTooltip:AddLine("LIVE-tested matched topology; no geometry is read.", 0.55, 0.82, 1, true);
 	Record(testID, "manual content calls completed", true);
 	phase2MatchedTooltip:Show();
 	Record(testID, "Show completed", true);
@@ -672,7 +672,7 @@ end);
 local phase2BLabel = CreateText(
 	phase2Panel,
 	"GameFontNormalSmall",
-	"Phase 2B — creation-time matched tooltip (runtime pending)"
+	"Phase 2B — creation-time matched tooltip (LIVE tested)"
 );
 phase2BLabel:SetPoint("TOPLEFT", 584, -50);
 
@@ -801,8 +801,8 @@ end);
 local footer = CreateText(
 	comparisonFrame,
 	"GameFontDisableSmall",
-	"Retail 12.1.0.69587 / 8ea15b61e. Phase 1 complete; Phase 2A tested; "
-		.. "Phase 2B runtime pending; no SavedVariables or polling."
+	"Retail 12.1.0.69587 / 8ea15b61e. TooltipComparison experimental research complete; "
+		.. "no SavedVariables or polling."
 );
 footer:SetPoint("BOTTOMLEFT", 24, 12);
 
@@ -840,7 +840,7 @@ end);
 UpdateCombatState(InCombatLockdown());
 
 comparisonFrame:SetScript("OnShow", function()
-	Record("GLOBAL", "sample opened; Phase 1 complete, Phase 2A tested, Phase 2B runtime pending", true);
+	Record("GLOBAL", "sample opened; Phase 1, Phase 2A, and Phase 2B research complete", true);
 end);
 
 comparisonFrame:SetScript("OnHide", function()
@@ -864,4 +864,4 @@ SlashCmdList.TOOLTIPCOMPARISON = function()
 	RetailUIResearch:ToggleSample("tooltips");
 end;
 
-Record("GLOBAL", "Phase 1 / Phase 2 module loaded; Phase 2B runtime pending", false);
+Record("GLOBAL", "Phase 1 / Phase 2 module loaded; TooltipComparison experimental research complete", false);
