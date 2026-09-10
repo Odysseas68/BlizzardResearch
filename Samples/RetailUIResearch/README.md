@@ -80,7 +80,7 @@ Detailed source-backed research documents remain under `12.1.0/Analysis/`.
 - Dialogs / Popups — **COMPLETE**
 - Tooltips — **COMPLETE**
 - Tabs — **COMPLETE** (source research; no runtime comparison required)
-- Deprecated & Compatibility APIs — **NEXT**
+- Deprecated & Compatibility APIs — **COMPLETE** (source and bounded runtime research; no comparison module required)
 
 ## Boundaries
 
