@@ -133,16 +133,18 @@ The Back and Forward buttons call `OnStepperClicked`; each applies one native sl
 
 **State handling**
 
-- At a range endpoint, the corresponding stepper is disabled, alpha is set to `0.5`, and the button hierarchy is desaturated.
+- Within half a value step of a range endpoint, the corresponding stepper is disabled, alpha is set to `0.5`, and the button hierarchy is desaturated (`MinimalSlider.lua:120-123`). This endpoint tolerance does not require a mathematically exact endpoint.
 - Disabling the complete control sets the slider thumb alpha to `0.7`, colors labels gray, disables the slider, and disables/desaturates both steppers.
 - The XML uses one atlas per stepper. It does not define separate hover or pushed artwork.
 - Slider press/hover state is used to emit interaction-start/end callbacks; the source does not use that state to swap art.
+
+`Release()` removes the inner slider value-changed script and hides labels; it does not itself unregister consumer callbacks or reset all interaction/enabled state (`MinimalSlider.lua:210-215`). Settings separately unregisters its own callback handles through `SettingsListElementMixin:Release()` (`Blizzard_SettingControls.lua:350-352, 690-692`).
 
 **Dependencies and security**
 
 - Direct dependency: `Blizzard_SharedXML`, whose TOC loads the minimal-slider Lua before its XML and itself depends on the narration/shared support used by the mixins.
 - It does not require `Blizzard_Settings`, a Settings category, a Setting object, SavedVariables, Ace, or a data provider.
-- No secure template, protected attribute, restricted API, or combat-only operation appears in the template/mixin path.
+- The slider/control definitions themselves do not declare protected gameplay behavior. Inherited `CallbackRegistryMixin` support contains security-related infrastructure, including a forbidden delegate frame and the documented taint-barrier path (`Interface/AddOns/Blizzard_SharedXMLBase/CallbackRegistry.lua:24-25, 125-126`). This does not make the slider itself a protected gameplay control, and source inspection does not establish universal combat safety or taint immunity.
 - The source evidence and focused LIVE runtime result support ordinary non-secure addon use.
 
 **Conclusion**
@@ -159,6 +161,7 @@ This directly answers the OBB design question: OBB can later use Blizzard's genu
 **Verified facts**
 
 - This is a SharedXML `ResizeLayoutFrame` using `SliderWithButtonsAndLabelMixin`.
+- It inherits the active `OnShow` layout path through `BaseLayoutFrameTemplate`; layout sizes the outer frame from child extents, so the child dimensions below are not fixed outer-frame dimensions (`Blizzard_SharedXML/LayoutFrame.xml:3-7, 105-129`; `LayoutFrame.lua:12-15, 486-531`).
 - `SetupSlider(minValue, maxValue, value, valueStep, label)` supplies all required state.
 - The slider is `300 x 20` at scale `0.7`, so its nominal visual extent is `210 x 14` before parent scaling.
 - Slider artwork is `common-slider-track` and `common-slider-thumb`.
@@ -185,6 +188,8 @@ It is directly reusable and is useful as a comparison row, but it is visually mu
 **Verified facts**
 
 - This SharedXML composite combines a `NumericInputBoxTemplate` (`30 x 22`) with a `UISliderTemplate` (`120 x 20`).
+- It also inherits the `ResizeLayoutFrame` `OnShow` layout path described in section 3.4; these child dimensions are not fixed outer-frame dimensions.
+- The numeric-input instance specifies `letters="3"` and `autoFocus="false"` (`SharedUIPanelTemplates.xml:1588`). Inherited focus-loss handling finalizes input before the parent clamp/callback path (`Blizzard_SharedXML/Shared/InputBox/InputBoxTemplates.xml:259-269`; `InputBoxTemplates.lua:247-250`; `SharedUIPanelTemplates.lua:1215-1220, 1223-1234`).
 - It uses the same `SetupSlider` contract, mirrors slider values into the edit box, clamps finalized edit-box input, and accepts a callback through `SetCallback`.
 - It has no decrement/increment buttons.
 
@@ -210,6 +215,7 @@ It is directly reusable and provides exact micro-adjustment by numeric entry rat
 - `Settings.CreateSlider(category, setting, options, tooltip)` creates a Settings initializer and adds it to a Settings category layout.
 - The setting must have numeric variable type.
 - The instantiated row is `SettingsSliderControlTemplate` (`280 x 26`), which creates a `MinimalSliderWithSteppersTemplate` at width 250 and binds it to the Setting object, tooltip, narration, enabled state, and initializer lifecycle.
+- Settings installs its own tooltip `OnEnter`/`OnLeave` handlers on the inner slider, replacing the shared hover scripts (`Blizzard_SettingControls.lua:5-7, 670-673`). Using the same underlying template therefore does not give a standalone control identical Settings interaction/callback composition; the SharedXML visual control remains independently reusable.
 - Ordinary addons can use the Settings registration framework for an addon category. That is supported framework use, but it is not a standalone custom-frame constructor.
 
 **Classification rationale**
@@ -232,6 +238,10 @@ It is directly reusable and provides exact micro-adjustment by numeric entry rat
 | `OpacityFrameSlider` | `Blizzard_ColorPickerFrame/Mainline/ColorPickerFrame.xml` | D | A named global vertical color-picker slider (`16 x 128`, `32 x 32` vertical thumb), not a reusable virtual template. |
 | `ScaleControlFrameTemplate` | `Blizzard_TransformManipulator/Blizzard_ScaleControlFrame.*` | D full control; C artwork | Housing-specific mixin calls `C_HousingExpertMode`, uses housing scale-bar assets, and has specialized fill/default-scale behavior. Its arrows are `13 x 13` and use `common-icon-backarrow` / `common-icon-forwardarrow`; those generic atlases can inform an addon-owned design, but the complete control is inappropriate. |
 | `MinimalScrollBar` | `Blizzard_SharedXML/Shared/Scroll/MinimalScrollBar.*` | C for artwork context | It is a vertical scroll controller, not a value slider. Buttons are `17 x 11` and use dedicated top/bottom normal/over/down atlases. Reusing them as horizontal slider steppers would require an addon-owned reinterpretation not demonstrated by Blizzard source. |
+
+### PropertySlider / UnitPopupSlider developer comment
+
+The inherited path `PropertySliderTemplate` → `PropertyBindingMixin` → `FireCallback` reaches Blizzard's source comment in `Interface/AddOns/Blizzard_SharedXML/PropertyBindingMixin.lua:32`: "TODO: Handle re-entrancy (cannot register, unregister at this point, need to queue)". `UnitPopupSliderTemplate` inherits this path through `PropertySliderTemplate`. The comment records unfinished handling/a known concern around reentrant callback mutation; it does not establish a reproduced runtime failure or, by itself, that ordinary PropertySlider use is broken. The existing classifications are retained.
 
 ### MinimalScrollBar state evidence
 
@@ -316,7 +326,7 @@ The user's visual preference is `MinimalSliderWithSteppersTemplate` because it i
 ### Verified source facts
 
 - All five demonstrated controls are defined by `Blizzard_SharedXML` and have direct initialization paths that do not require Settings data.
-- None of those paths declares secure/protected behavior or calls a restricted gameplay API.
+- The demonstrated slider/control definitions do not themselves declare protected gameplay behavior or call restricted gameplay APIs. Inherited `CallbackRegistryMixin` contains security/taint-related infrastructure, including the documented taint-barrier path described in section 3.3; neither fact proves universal combat safety or taint immunity.
 - The sample is non-secure, does not register combat events, and does not interact with protected game frames.
 
 ### Not established by this test
