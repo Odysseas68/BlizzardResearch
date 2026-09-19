@@ -1,0 +1,8 @@
+## Interface: 120100
+## Title: Guild Repair Diagnostics
+## Notes: Evidence-only Retail Guild Bank initialization and repair observer
+## Dependencies: Blizzard_SharedXML
+## SavedVariables: GuildRepairDiagnosticsDB
+
+Observer.lua
+Viewer.lua

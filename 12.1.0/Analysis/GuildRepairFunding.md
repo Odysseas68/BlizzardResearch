@@ -4,7 +4,7 @@
 
 This is the canonical, incremental BlizzardResearch record for the ongoing Retail Guild Repair funding investigation. The central question is how to establish reliable funding behavior and attribution when `GetGuildBankMoney()` can report 0 after a full client restart even though a native guild-first repair succeeds.
 
-This document consolidates the completed source investigation and previously recorded controlled OUS runtime results. It does not modify OUS production behavior, implement a diagnostic, or establish a universal funding or cache contract.
+This document consolidates the completed source investigation, previously recorded controlled OUS runtime results, and the standalone diagnostic's completed Logs01–08 initialization and repair series. It does not modify OUS production behavior, implement a diagnostic, or establish a universal funding or cache contract.
 
 | Evidence label | Meaning in this record |
 | --- | --- |
@@ -14,7 +14,7 @@ This document consolidates the completed source investigation and previously rec
 | **ASSUMPTION** | An unverified premise, not usable as established behavior. |
 | **UNRESOLVED** | Available evidence does not settle the question. |
 
-Runtime test dates, client builds, and complete addon compositions were not established in the supplied record. No runtime tests were performed by Codex for this documentation task. Missing provenance remains missing rather than being inferred from the source snapshots.
+Runtime test dates, client builds, and complete addon compositions were not established for the earlier OUS observations. Logs01–08 report their client build separately in section 8; their test dates and complete addon compositions remain unspecified. No runtime tests were performed by Codex for this documentation task. Missing provenance remains missing rather than being inferred from the source snapshots.
 
 Keep four roles separate:
 
@@ -143,7 +143,7 @@ Generated `SynchronousEvent = true` metadata does not establish server-response 
 
 ## 8. Controlled runtime evidence
 
-All entries here are **VERIFIED RUNTIME RESULTS — previously recorded controlled results supplied by the user**, not tests performed by Codex or general API contracts. Exact dates/builds were not supplied.
+All entries here are **VERIFIED RUNTIME RESULTS — previously recorded controlled results supplied by the user**, not tests performed by Codex or general API contracts. Exact dates/builds were not supplied for the earlier observations in the following table; Logs01–08 have their own provenance below. The historical observations remain separate from that diagnostic series.
 
 | Scenario | Previously recorded observations |
 | --- | --- |
@@ -158,11 +158,109 @@ All entries here are **VERIFIED RUNTIME RESULTS — previously recorded controll
 
 These observations do not establish a universal cache lifetime, unlimited-value sentinel, funding algorithm, or event ordering contract. They do not isolate which native mechanism populated the values.
 
+### 8.1 Log01 — cold Guild Bank opening without a transaction
+
+**Experiment identity and provenance:** Log ID `Log01`, label `cold-bank-open`, officer alt. The user reports effectively unrestricted repair/withdraw permissions for this rank; that context is separate from API value semantics. The runtime client reported Retail `12.1.0`, build `69814`, Interface `120100`. Diagnostic version `1` / schema `1` recorded design source `4e3cbb8c5609e4bfc332c0aebbfa4d79731fab59`, build `12.1.0.69814`.
+
+The complete raw evidence remains read-only outside this repository:
+
+`D:\WowDEV\Projects\BlizzardResearch_RuntimeLogs\GuildRepairDiagnostics\Log01_cold-bank-open_Officer_Alt.txt`
+
+It was reviewed without copying the raw log into the repository. The user reports a full client restart before login, no Guild Bank opening before collection, no repair, and no deposit, withdrawal, purchase, or other intentional gold transaction. Guild Bank was opened normally through Blizzard UI; collection was stopped while it remained open.
+
+**VERIFIED RUNTIME RESULT — observer sequence:** relative times below are rounded to six decimal seconds for presentation; sequence numbers retain the recorded ordering.
+
+| Seq | Elapsed seconds | Observation | `GetGuildBankMoney()` | Guild Bank frame / interaction context |
+| --- | --- | --- | --- | --- |
+| 1 | 0.000069 | START | `0` | Frame did not exist; GuildBanker interaction `false`. |
+| 2 | 31.722712 | First `INSTRUMENTATION_STATUS` after initiating the normal bank interaction | `192441419` | Frame existed but was not shown; GuildBanker interaction `true`. |
+| 3 | 31.722894 | Second `INSTRUMENTATION_STATUS` | `192441419` | Frame existed but was not shown; interaction `true`. |
+| 4 | 31.722991 | Recorded `ADDON_LOADED` observation for `Blizzard_GuildBankUI` | `192441419` | Frame existed but was not shown; interaction `true`. |
+| 5 | 31.725361 | First observed `QueryGuildBankTab POST-CALL`, tab argument `1` | `192441419` | Frame shown; interaction `true`. |
+| 6 | 31.730339 | `GuildBankFrame OnShow POST-SCRIPT` | `192441419` | Frame shown; interaction `true`. |
+| 7 | 31.764864 | `PLAYER_INTERACTION_MANAGER_FRAME_SHOW`, raw interaction argument `10` (GuildBanker) | `192441419` | Frame shown; interaction `true`. |
+| 8–14 | 31.765174–31.765884 | Later query POST-CALL records, tab arguments `2, 3, 4, 5, 6, 7, 1` | `192441419` | Frame shown; interaction `true`. |
+| 15 | 54.032063 | STOP | `192441419` | Frame still shown; interaction `true`. |
+
+`GetGuildBankWithdrawMoney()` remained **`10000000000`** in every retained snapshot. Preserve this as a raw observed number: neither the rank report nor this run establishes a documented unlimited sentinel. `GetMoney()` remained `64323512` in every snapshot. At START, `CanGuildBankRepair()` was skipped because no relevant interaction context was established; from record 2 onward it returned `true`. This run performed no repair and provides no repair-funding split evidence.
+
+The run retained **15 records with zero dropped observations**. Both guild-money event registrations were reported as registered, but no `GUILDBANK_UPDATE_MONEY` or `GUILDBANK_UPDATE_WITHDRAWMONEY` record was captured anywhere in the run, including between cold START and the first populated observation. Query instrumentation reported `installed-coverage-unverified`; both frame-script observers reported installed. Zero dropped records excludes recorded buffer overflow here, not every possible instrumentation blind spot.
+
+**VERIFIED RUNTIME RESULT:** in this controlled run, `GetGuildBankMoney()` changed from `0` to `192441419` before the first observed query POST-CALL marker. The value was already populated at the earliest observer record after GuildBanker interaction became active, and before the recorded ADDON_LOADED observation and OnShow POST-SCRIPT marker.
+
+**Bounded interpretation:** `QueryGuildBankTab` was not necessary for the already-observed initial money population in this run's normal UI opening sequence. This does not establish that the query can never affect money state, nor complete native-call coverage. No guild-money notification was captured across the observed transition; this does not establish that either notification never occurs during initialization or is universally unnecessary.
+
+**UNRESOLVED — causation and observation boundaries:** the exact native refresh mechanism remains unidentified. GuildBanker interaction being active at record 2 is not proof that the interaction itself caused the population. Native work may precede Lua callbacks/hooks, and snapshots are sequential rather than atomic. Records 2–3 are made during bank-frame hook installation inside the diagnostic's ADDON_LOADED handler, before it emits record 4. Thus "before recorded ADDON_LOADED" does not mean before addon loading or before that event's dispatch. Record 7 likewise marks this observer's callback, not the beginning of native interaction or Blizzard's processing of the event. Query/frame hooks are post-call/post-script, not pre-call/pre-script observations.
+
+No verified public merchant-safe refresh/request API follows from Log01; the source conclusion in section 11 remains unchanged.
+
+### 8.2 Completed diagnostic series — identity and controls
+
+All eight raw files remain read-only in `D:\WowDEV\Projects\BlizzardResearch_RuntimeLogs\GuildRepairDiagnostics\`; none is copied into this repository. Every run reports Retail `12.1.0`, build `69814`, Interface `120100`, diagnostic version `1`, schema `1`, and the section 2 current LIVE design source. The client build date string is not a runtime test date. All report completed collection and zero dropped observations; query coverage remains unverified. Setup, character identity, OUS settings, transaction count, and chat observations below are user-supplied controls, distinguished from the recorded snapshots.
+
+| Log / exact external filename | Internal label | User-reported control | Retained records |
+| --- | --- | --- | --- |
+| `Log01_cold-bank-open_Officer_Alt.txt` | `cold-bank-open` | Officer alt; full restart; first natural bank opening; no transaction (section 8.1). | 15 |
+| `Log02_warm-merchant-no-repair_Officer_Alt.txt` | `warm-merchant-no-repair` | Same officer/session after Log01; bank closed; fully repaired; Auto Repair OFF; no transaction. | 6 |
+| `Log03_cold-merchant-damaged-no-repair_Officer_Alt.txt` | `cold-merchant-damaged-no-repair` | Officer alt; full restart; no bank interaction; damaged; no repair. | 6 |
+| `Log04_warm-merchant-damaged-no-repair_Officer_Alt.txt` | `warm-merchant-damaged-no-repair` | Same character/damage after naturally opening/closing bank; no repair. | 5 |
+| `Log05_warm-full-guild-repair_Officer_Alt.txt` | `warm-full-guild-repair` | Officer alt; bank initialized; Auto Repair ON / Guild Repair First ON; one native `RepairAllItems(true)`. | 8 |
+| `Log06_cold-guild-first-repair_Officer_Alt.txt` | `cold-guild-first-repair` | Officer alt; full restart; bank unopened; one guild-first repair; canonical replacement Log06. | 8 |
+| `Log07_warm-mixed-guild-repair_Haranidia.txt` | `warm-mixed-guild-repair` | Haranidia; bank warm; 5g (`50000`) allowance remaining; one guild-first repair. | 9 |
+| `Log08_cold-mixed-guild-repair_Haranidia.txt` | `cold-mixed-guild-repair` | Haranidia; full exit/restart; bank unopened; daily rank limit raised from 5g to 10g after 5g consumed, leaving `50000`; one guild-first repair. | 9 |
+
+Only the canonical Log06 with internal label `cold-guild-first-repair` is evidence here. Any earlier attempted Log06 with the wrong label is superseded and excluded; it is not used to explain gaps between runs.
+
+**VERIFIED RUNTIME RESULT — non-transaction merchant controls:** Log02 retained bank `192441419`, withdrawal `10000000000`, and wallet `64323512` throughout; repair-capable merchant snapshots returned repair cost `0`. Opening that merchant did not change the warm values. Log03 retained bank `0`, withdrawal `10000000000`, and wallet `64323512`; merchant snapshots returned repair bill `235556` and `CanGuildBankRepair() = true`. Opening a repair-capable merchant did not populate its cold bank getter. Log04 retained bank `192441419`, withdrawal `10000000000`, wallet `64323512`, the same bill `235556`, and eligibility `true`. Logs03/04 therefore compare cold/warm observable bank state without a changed bill or eligibility. Natural bank initialization preceded the populated merchant state; its exact refresh mechanism remains unidentified.
+
+### 8.3 Logs05–08 — PRE boundary and transaction observations
+
+The temporary OUS instrumentation supplied `PRE_GUILD_REPAIR` immediately before the existing `RepairAllItems(true)`, using OUS's existing `cost` local. It added no second repair or post-transaction inference. Calling the marker synchronously reads/records state and may perturb timing; it is an observation boundary, not native transaction identity or an atomic snapshot. The observer alone does not prove attribution.
+
+All amounts below are raw copper. At every PRE marker, `CanGuildBankRepair()` was `true`, and the marker's `cost` equaled the repair getter (`R`). The bank frame was absent in cold Logs06/08.
+
+| Log / PRE seq | R | Bank getter at PRE | Withdrawal at PRE | Wallet at PRE | User-observed OUS chat |
+| --- | --- | --- | --- | --- | --- |
+| Log05 / 4 | `235556` | `192441419` | `10000000000` | `64323512` | `[OUS]: Guild-first repair requested: 23 55 56` |
+| Log06 / 3 | `247954` | `0` | `9999528888` | `64323512` | Not supplied for this run. |
+| Log07 / 3 | `513931` | `191722353` | `50000` | `349550283` | `[OUS]: Guild-first repair requested: 51 39 31` |
+| Log08 / 3 | `513931` | `0` | `50000` | `348572421` | `[OUS]: Guild-first repair requested: 51 39 31` |
+
+For the following table, M = `GUILDBANK_UPDATE_MONEY`, W = `GUILDBANK_UPDATE_WITHDRAWMONEY`, P = `PLAYER_MONEY`; each cell gives bank / withdrawal / wallet / repair getter, in that order. Sequence numbers order observer callbacks.
+
+| Log | M, seq 6 | Next observation | Following observation |
+| --- | --- | --- | --- |
+| Log05 | `192205863 / 10000000000 / 64323512 / 235556` | W, seq 7: `192205863 / 9999764444 / 64323512 / 0` | STOP, seq 8: same values; wallet unchanged throughout. |
+| Log06 | `191722353 / 9999528888 / 64323512 / 247954` | W, seq 7: `191722353 / 9999280934 / 64323512 / 0` | STOP, seq 8: same values; wallet unchanged throughout. |
+| Log07 | `191672353 / 50000 / 349550283 / 513931` | W, seq 7: `191672353 / 0 / 349550283 / 513931` | P, seq 8: `191672353 / 0 / 349086352 / 0`; STOP seq 9 unchanged. |
+| Log08 | `191622353 / 50000 / 348572421 / 513931` | P, seq 7: `191622353 / 50000 / 348108490 / 0` | W, seq 8: `191622353 / 0 / 348108490 / 0`; STOP seq 9 unchanged. |
+
+### 8.4 Controlled funding arithmetic and the Log05/06 continuity gap
+
+| Log | Exact observed debit arithmetic | Controlled attribution supported |
+| --- | --- | --- |
+| Log05 | Bank: `192441419 - 192205863 = 235556`; withdrawal: `10000000000 - 9999764444 = 235556`; wallet debit `0`. | `R = 235556`, `G = 235556`, `P = 0`: strong full-guild evidence. |
+| Log06 | Within-run withdrawal: `9999528888 - 9999280934 = 247954`; wallet debit `0`; repair getter becomes `0`. Bank PRE was cold `0`, so no valid within-run bank debit can be computed. | Strongly supports `R = 247954`, `G = 247954`, `P = 0` from PRE plus withdrawal/wallet observations; cross-run bank corroboration is limited by the gap below. |
+| Log07 | Bank: `191722353 - 191672353 = 50000`; withdrawal: `50000 - 0 = 50000`; wallet: `349550283 - 349086352 = 463931`; `513931 = 50000 + 463931`. | `R = 513931`, `G = 50000`, `P = 463931`: exact controlled mixed split. |
+| Log08 | Withdrawal: `50000 - 0 = 50000`; wallet: `348572421 - 348108490 = 463931`; `513931 = 50000 + 463931`. Prior durable Log07 bank minus populated Log08 bank: `191672353 - 191622353 = 50000`. | Strongly supports `R = 513931`, `G = 50000`, `P = 463931`; cross-run bank difference corroborates under the reported controls, not from cold PRE zero. |
+
+**Contradiction in the supplied cross-run summary / UNRESOLVED continuity:** the actual Log05 final bank `192205863` minus canonical Log06 populated bank `191722353` is **`483510`**, not `247954`. It exceeds Log06's bill by `235556`. Log05 final withdrawal `9999764444` also exceeds canonical Log06 PRE withdrawal `9999528888` by `235556` before this recorded transaction. These differences establish a gap in the eight-run continuity; they do not identify an intervening operation or its cause. Do not silently reconstruct a pre-Log06 bank balance, attribute the entire cross-run bank change to Log06, or use a superseded wrong-label run to fill the gap. This does not negate Log06's exact within-run withdrawal debit and unchanged wallet.
+
+### 8.5 Bounded cross-log conclusions
+
+- **VERIFIED RUNTIME RESULT:** Logs03, 06, and 08 show cold-visible bank `0` alongside merchant-time eligibility `true`. Logs06/08 still support actual guild funding. Cold zero is therefore not proof of unavailable guild funds or a usable pre-transaction balance.
+- **Controlled transaction conclusion:** Logs05–08 support the current one-call guild-first policy under the tested conditions. Logs07/08 directly demonstrate available guild allowance consumed and the exact remainder charged personally from one `RepairAllItems(true)`; no second `RepairAllItems()` was required. This is not a documented universal Blizzard funding contract.
+- **VERIFIED RUNTIME RESULT:** Log07 observed M → W → P; Log08 observed M → P → W. Attribution cannot depend on a fixed notification order. Several snapshots already showed changed money while the repair getter still held the old bill. Sequence orders callbacks, individual snapshots are sequential/non-atomic, and timestamps do not establish causation.
+- Preserve every withdrawal number as observed. These runs do not establish persistence/cache lifetime or undocumented unlimited-sentinel semantics for large positive values.
+- PRE plus controlled guild/withdrawal/wallet changes substantially strengthens transaction attribution; exact arithmetic and controlled attribution remain distinct from general API guarantees. No universal public settlement signal was established.
+- The inspected-source conclusion remains unchanged: no verified public merchant-safe money refresh/request API was established. Transaction-side population is not such an API; the causal initialization mechanism remains unresolved.
+
 ## 9. Current OUS production policy
 
-Production context is limited to why attribution remains conservative. **User-provided OUS 1.0.3 policy**, not newly inspected implementation:
+Production context is limited to why attribution remains conservative. The previously recorded **user-provided OUS 1.0.3 policy** is retained below; the preceding temporary-instrumentation task also inspected the current `Utilities.lua` guild-first branch, without changing its repair or accounting policy:
 
 - When Guild First is enabled and `CanGuildBankRepair()` is true, mark repair funding indeterminate and call `RepairAllItems(true)` exactly once.
+- That guild-first branch does not require cached bank balance or full personal affordability first. Logs07/08 directly observed guild resources plus a personal remainder under this policy.
 - Otherwise use the explicit personal `RepairAllItems()` path. Known Own-funds repair can be attributed to Repairs.
 - For a guild-first transaction, do not speculate about the actual Guild/Own split. Any observed personal wallet debit remains ordinary Gold Spent; speculative guild-first funding does not populate Repairs.
 - No visible Guild Repairs counter exists in production.
@@ -179,6 +277,8 @@ R = G + P
 ```
 
 The verified example satisfies the arithmetic identity. That identity alone does not prove transaction attribution under arbitrary event interleaving.
+
+Logs05–08 add the PRE boundary and exact controlled debit arithmetic in section 8.4. Their supported splits remain CONDITIONALLY ATTRIBUTABLE in the general model; the Log05/06 bank continuity gap must not be hidden by matching Log06's within-run allowance arithmetic. Session Stats intentionally does not infer repair-specific funding from the guild-first call alone, and no accounting change is proposed here.
 
 | Certainty | Evidence requirement / boundary |
 | --- | --- |
@@ -225,12 +325,19 @@ All remain **UNRESOLVED**:
 | Question | Missing evidence |
 | --- | --- |
 | What populates money/withdrawal state during GuildBanker interaction? | Native request/cache implementation or discriminating runtime observations. |
-| Is money available before the first cold-start `QueryGuildBankTab`? | Ordered observations relative to actual interaction/frame/query execution. |
-| What is exact event/getter ordering? | Timestamped observations for the specified run, without promoting ordering to a permanent contract. |
-| Can allowance changes corroborate limited-rank mixed repairs for the player? | Controlled observations distinguishing allowance changes from unrelated activity and initialization. |
-| What funding attribution is reliable without timers or speculation? | Evidence that isolates a transaction and its contributions under the relevant conditions. |
+| What happens between cold pre-interaction state and the earliest populated GuildBanker observation? | Log01 already observed population before its first query POST-CALL marker; the earlier native transition and complete call coverage remain unobserved. |
+| Is there a general event/getter ordering or settlement contract? | Logs07/08 already show differing notification order and non-atomic state; no universal contract established. |
+| Can allowance changes generally identify a repair? | Logs07/08 corroborate the controlled mixed split; unrelated activity and initialization still require separation in general. |
+| What funding attribution is reliable beyond controlled isolated transactions? | Logs05–08 strengthen controlled attribution; a universal transaction identity/settlement signal remains unestablished. |
+| What accounts for the Log05/06 continuity gap? | Bank difference `483510`, versus Log06 bill `247954`, and pre-run withdrawal difference `235556`; intervening cause not captured by this series. |
 
 ## 14. Next controlled experiment
+
+**Completion checkpoint:** Logs01–08 now complete the recorded initialization, merchant-control, full-guild, and mixed-funding series (section 8). The earlier interaction-boundary target below is retained as unresolved research, not a claim that the later repair experiments were unperformed or a directive to change instrumentation. No additional experiment or production accounting change is authorized by this documentation task.
+
+### 14.1 Initial experiment — completed as Log01
+
+The original timing-only experiment plan is retained below. Log01 completed the normal bank-opening run without a repair or money transaction; section 8.1 records its result and observation limits.
 
 Start with a cold full-client start and do not open Guild Bank beforehand. Perform no repair or money transaction. Then use a real GuildBanker interaction and capture ordered/timestamped observations of:
 
@@ -242,4 +349,14 @@ Start with a cold full-client start and do not open Guild Bank beforehand. Perfo
 
 This experiment determines timing boundaries only. Values populated before the first tab query would show that query was unnecessary for initial population in that run. Values populated afterward would not necessarily prove causation.
 
-A small evidence-only BlizzardResearch diagnostic is planned for this and later repair experiments. It has not been designed or implemented here. Prefer passive observation and record any instrumentation-induced timing/security perturbation if unavoidable. No production change follows from this plan alone.
+The standalone evidence-only GuildRepairDiagnostics sample has since been implemented and used for Log01. Its implementation was not changed for this documentation update. Prefer passive observation and record any instrumentation-induced timing/security perturbation if unavoidable. No production change follows from this experiment alone.
+
+### 14.2 Next research target — the earlier interaction boundary
+
+**UNRESOLVED:** narrow the interval between Log01's cold START (`GetGuildBankMoney() = 0`, GuildBanker interaction `false`) and its earliest post-initiation observation (`192441419`, interaction `true`, bank frame created but not shown). Repeating the unchanged observer cannot be assumed to expose that boundary more precisely.
+
+The next instrumentation question is whether a passive Lua observation can occur before Blizzard's GuildBanker show handling loads the bank UI, and before the native money state becomes populated. The desired boundary is entry into dispatch/handling of `PLAYER_INTERACTION_MANAGER_FRAME_SHOW` for GuildBanker, ahead of the manager's `ShowFrame` / bank load path. The current diagnostic records its own event callback but cannot guarantee it runs before Blizzard's handler or before native work. A secure post-hook is not an entry marker. A passive Lua mechanism that guarantees the required pre-population observation is **not currently established** by the inspected source/diagnostic architecture.
+
+A smaller, known Lua-visible point would be the very beginning of the diagnostic's existing `ADDON_LOADED("Blizzard_GuildBankUI")` callback, before `InstallBankFrameHooks()` and its instrumentation snapshots. Capturing that point would require additional diagnostic instrumentation in a separately authorized task. It could move the first sample earlier within that callback, but would still follow addon creation/loading and any preceding native work; it is not known to reveal the cold-to-populated transition.
+
+No new controlled runtime experiment is specified until the availability and limits of an earlier observation point are established. Do not substitute polling, timers, event manufacture, function/script replacement, or active bank/repair operations for the missing boundary.
